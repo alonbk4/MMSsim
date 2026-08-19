@@ -38,6 +38,22 @@ npm run preview    # serve the built app
 React 19 + TypeScript + Vite. State in Zustand, persisted to `localStorage`.
 Charts are hand-rolled SVG — no charting dependency.
 
+### Deploying it
+
+`.github/workflows/pages.yml` builds and publishes `dist/` on every push to the
+default branch. It only takes effect once Pages is pointed at the workflow:
+
+> Settings → Pages → Build and deployment → **Source: GitHub Actions**
+
+Deploying "from a branch" instead serves the repository root, which contains the
+development `index.html` — its script tag points at `/src/main.tsx`, a file that
+only exists before the build. The browser gets a 404 for it and renders a blank
+page, which is the usual explanation for a Pages deploy that shows nothing.
+
+`base: './'` in `vite.config.ts` keeps every asset path relative, so the same
+build works at a user site (`you.github.io`), at a project subpath
+(`you.github.io/MMSsim/`) and inside a Capacitor WebView, with no rebuild.
+
 ### Installing it on a phone
 
 It ships as a PWA: open the built site on a phone and use *Add to Home Screen*.
