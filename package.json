@@ -1,0 +1,28 @@
+{
+  "name": "mmssim",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Yard systems simulator — design off-grid water, food, energy, nutrient and shelter systems for a real site, with evidence tiers separating what is proven on-site from what is merely researched.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit false --pretty",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11",
+    "vite-plugin-pwa": "^0.21.1",
+    "vitest": "^3.0.5"
+  }
+}
