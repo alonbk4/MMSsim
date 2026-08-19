@@ -9,7 +9,11 @@ export type Scenario = 'low' | 'expected' | 'high';
 
 export interface ResourceMonth {
   produced: number;
+  /** What the design needs to run. Optional draws are excluded — a compost bay
+   *  would like woody material, but going without is not a shortfall. */
   demanded: number;
+  /** Opportunistic draw: taken only from what is left after the real demand. */
+  demandedOptional: number;
   /** Drawn from storage this month (positive) or added to it (negative). */
   fromStorage: number;
   stockEnd: number;
@@ -123,7 +127,7 @@ function scaleRateTo(rate: Rate, perUnitPerYear: number): Rate {
   }
 }
 
-type SeasonProfiles = Record<SeasonProfileId, number[]>;
+export type SeasonProfiles = Record<SeasonProfileId, number[]>;
 
 export function buildSeasonProfiles(site: SiteProfile, drivers: DriverSeries): SeasonProfiles {
   const norm = (xs: number[]): number[] => {
@@ -151,6 +155,15 @@ function rateAmount(
     case 'driver':
       return drivers[rate.driver][month] * rate.coefficient * units;
   }
+}
+
+/** A flow's total for one unit across a whole year, at this site. */
+export function annualPerUnit(
+  rate: Rate, drivers: DriverSeries, seasons: SeasonProfiles,
+): number {
+  let total = 0;
+  for (let m = 0; m < 12; m++) total += rateAmount(rate, m, 1, drivers, seasons);
+  return total;
 }
 
 /** Which resources the household itself supplies and demands each month. */
@@ -231,17 +244,20 @@ function runScenario(
     const gross = systems.map((s) => {
       const produce: Partial<Record<ResourceId, number>> = {};
       const consume: Partial<Record<ResourceId, number>> = {};
+      const optional: Partial<Record<ResourceId, number>> = {};
       const required: ResourceId[] = [];
       for (const f of s.def.flows) {
         const amt = rateAmount(f.rate, month, s.placement.units, drivers, seasons);
         if (f.direction === 'produce') {
           produce[f.resource] = (produce[f.resource] ?? 0) + amt * s.confidence;
+        } else if (f.optional) {
+          optional[f.resource] = (optional[f.resource] ?? 0) + amt;
         } else {
           consume[f.resource] = (consume[f.resource] ?? 0) + amt;
-          if (!f.optional && f.resource !== 'labor' && amt > 0) required.push(f.resource);
+          if (f.resource !== 'labor' && amt > 0) required.push(f.resource);
         }
       }
-      return { s, produce, consume, required };
+      return { s, produce, consume, optional, required };
     });
 
     // Fixed-point pass: a system that cannot get its inputs cannot produce its
@@ -282,6 +298,7 @@ function runScenario(
     // Settle the month with the converged derates.
     const supply: Partial<Record<ResourceId, number>> = {};
     const demand: Partial<Record<ResourceId, number>> = {};
+    const wanted: Partial<Record<ResourceId, number>> = {};
     for (const [r, v] of Object.entries(hh.supply)) supply[r as ResourceId] = v;
     for (const [r, v] of Object.entries(hh.demand)) demand[r as ResourceId] = v;
     gross.forEach((g, i) => {
@@ -290,6 +307,9 @@ function runScenario(
       }
       for (const [r, v] of Object.entries(g.consume)) {
         demand[r as ResourceId] = (demand[r as ResourceId] ?? 0) + v * derate[i];
+      }
+      for (const [r, v] of Object.entries(g.optional)) {
+        wanted[r as ResourceId] = (wanted[r as ResourceId] ?? 0) + v * derate[i];
       }
       if (record) {
         runRateSum[g.s.placement.id] += derate[i] / 12;
@@ -305,11 +325,13 @@ function runScenario(
     for (const r of RESOURCE_ORDER) {
       const produced = supply[r] ?? 0;
       const demanded = demand[r] ?? 0;
+      const opportunistic = wanted[r] ?? 0;
       const cap = capacity[r] ?? 0;
       const start = STORABLE.includes(r) ? (stock[r] ?? 0) : 0;
       const pool = produced + start;
+      // Real demand is served first; optional draws only get what is left.
       const met = Math.min(pool, demanded);
-      const leftover = pool - met;
+      const leftover = Math.max(0, pool - met - Math.min(pool - met, opportunistic));
       const end = STORABLE.includes(r) ? Math.min(leftover, cap) : 0;
       const surplus = leftover - end;
       if (STORABLE.includes(r)) stock[r] = end;
@@ -317,6 +339,7 @@ function runScenario(
         const m: ResourceMonth = {
           produced,
           demanded,
+          demandedOptional: opportunistic,
           fromStorage: start - end,
           stockEnd: end,
           capacity: cap,
@@ -509,7 +532,7 @@ function format(n: number): string {
 }
 
 export const EMPTY_MONTH: ResourceMonth = {
-  produced: 0, demanded: 0, fromStorage: 0, stockEnd: 0,
+  produced: 0, demanded: 0, demandedOptional: 0, fromStorage: 0, stockEnd: 0,
   capacity: 0, shortfall: 0, surplus: 0,
 };
 

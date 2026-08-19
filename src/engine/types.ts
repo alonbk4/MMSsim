@@ -184,6 +184,8 @@ export interface SiteProfile {
   etoMm: number[];
   /** Usable yard area, m². */
   lotAreaM2: number;
+  /** Width of the lot in metres; depth is derived from the area. */
+  lotWidthM: number;
   /** Roof area available for catchment/PV, m². */
   roofAreaM2: number;
   household: number;

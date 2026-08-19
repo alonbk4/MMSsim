@@ -130,6 +130,35 @@ describe('input chains', () => {
   });
 });
 
+describe('optional inputs', () => {
+  it('does not count a nice-to-have input as a household shortfall', () => {
+    // Compost bays will take woody material if there is any, but not having it
+    // is not a gap in the design the way missing drinking water is.
+    const design = designWith(makePlacement('compost-bays', 3, 0, 0));
+    const res = simulate(design, CATALOG_BY_ID);
+    const biomass = res.expected.resources.biomass;
+    expect(biomass.demanded).toBe(0);
+    expect(biomass.coverage).toBe(1);
+    expect(biomass.months.every((m) => m.demandedOptional > 0)).toBe(true);
+    // The required input is still required.
+    expect(res.expected.resources.organicWaste.months[0].demanded).toBeGreaterThan(0);
+  });
+
+  it('serves required demand before optional draws', () => {
+    const design = designWith(
+      makePlacement('coppice-woodlot', 100, 0, 0),
+      makePlacement('compost-bays', 3, 0, 0),
+      makePlacement('rocket-mass-heater', 1, 0, 0),
+    );
+    const res = simulate(design, CATALOG_BY_ID);
+    const heater = res.expected.placements.find((p) => p.systemId === 'rocket-mass-heater')!;
+    const bays = res.expected.placements.find((p) => p.systemId === 'compost-bays')!;
+    // The heater needs biomass outright; the bays merely like it.
+    expect(bays.limitedBy).not.toContain('biomass');
+    expect(heater.runRate).toBeGreaterThan(0);
+  });
+});
+
 describe('evidence tiers', () => {
   it('brackets expected output between the low and high cases', () => {
     const design = createDefaultDesign();

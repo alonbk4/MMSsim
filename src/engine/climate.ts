@@ -169,6 +169,7 @@ export const DEFAULT_SITE: SiteProfile = {
   meanTempC: [...CLIMATE_PRESETS[1].meanTempC],
   etoMm: [...CLIMATE_PRESETS[1].etoMm],
   lotAreaM2: 600,
+  lotWidthM: 20,
   roofAreaM2: 90,
   household: 3,
   waterUsePerPersonLPerDay: 120,

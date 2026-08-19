@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="MMSsim">
+  <rect width="64" height="64" rx="14" fill="#1b3a2b"/>
+  <circle cx="44" cy="21" r="7.5" fill="#f0c05a"/>
+  <path d="M22 10c5 8 8 11 8 15a8 8 0 0 1-16 0c0-4 3-7 8-15z" fill="#6fbfd8"/>
+  <g fill="none" stroke="#d8e8dd" stroke-width="3.4" stroke-linecap="round">
+    <path d="M9 41c8-3 14 3 22 0s16 3 24 0"/>
+    <path d="M9 49c8-3 14 3 22 0s16 3 24 0"/>
+    <path d="M9 57c8-3 14 3 22 0s16 3 24 0"/>
+  </g>
+</svg>
