@@ -493,3 +493,51 @@ details.disclosure > summary::marker { color: var(--text-muted); }
   position: absolute; width: 1px; height: 1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
 }
+
+/* ------------------------------ plan palette ------------------------------ */
+
+/*
+ * The plan is a drawing, not a chart, so it is free to use naturalistic hues
+ * rather than the categorical series slots. Each category supplies an ink, a
+ * fill and a light accent; both plan styles read the same three roles, which is
+ * what lets them share geometry.
+ */
+.cat-water    { --cat-ink: #1f6fb2; --cat-fill: #9ecbe8; --cat-lift: #cfe6f4; }
+.cat-food     { --cat-ink: #2f6b3a; --cat-fill: #9dc48c; --cat-lift: #cfe3c2; }
+.cat-energy   { --cat-ink: #a4671b; --cat-fill: #f0bf76; --cat-lift: #f8ddb2; }
+.cat-sanitation { --cat-ink: #5b5f8a; --cat-fill: #b3b6cf; --cat-lift: #d8dae8; }
+.cat-soil     { --cat-ink: #7a5a30; --cat-fill: #c4a175; --cat-lift: #e0cbae; }
+.cat-shelter  { --cat-ink: #5a6270; --cat-fill: #aeb5c0; --cat-lift: #d6dae1; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .cat-water    { --cat-ink: #6cb6e6; --cat-fill: #2d5f83; --cat-lift: #40809f; }
+  :root:not([data-theme="light"]) .cat-food     { --cat-ink: #7dbf83; --cat-fill: #2f5a37; --cat-lift: #447a4b; }
+  :root:not([data-theme="light"]) .cat-energy   { --cat-ink: #e0a95e; --cat-fill: #6d4a1c; --cat-lift: #8f6524; }
+  :root:not([data-theme="light"]) .cat-sanitation { --cat-ink: #9aa0cc; --cat-fill: #3c3f61; --cat-lift: #53577f; }
+  :root:not([data-theme="light"]) .cat-soil     { --cat-ink: #c19a68; --cat-fill: #5a442a; --cat-lift: #7a5e3c; }
+  :root:not([data-theme="light"]) .cat-shelter  { --cat-ink: #a3abb8; --cat-fill: #414751; --cat-lift: #5b626d; }
+}
+:root[data-theme="dark"] .cat-water    { --cat-ink: #6cb6e6; --cat-fill: #2d5f83; --cat-lift: #40809f; }
+:root[data-theme="dark"] .cat-food     { --cat-ink: #7dbf83; --cat-fill: #2f5a37; --cat-lift: #447a4b; }
+:root[data-theme="dark"] .cat-energy   { --cat-ink: #e0a95e; --cat-fill: #6d4a1c; --cat-lift: #8f6524; }
+:root[data-theme="dark"] .cat-sanitation { --cat-ink: #9aa0cc; --cat-fill: #3c3f61; --cat-lift: #53577f; }
+:root[data-theme="dark"] .cat-soil     { --cat-ink: #c19a68; --cat-fill: #5a442a; --cat-lift: #7a5e3c; }
+:root[data-theme="dark"] .cat-shelter  { --cat-ink: #a3abb8; --cat-fill: #414751; --cat-lift: #5b626d; }
+
+.plan-style-toggle {
+  position: absolute; left: 50%; transform: translateX(-50%); top: 10px;
+  display: flex; gap: 2px; padding: 3px;
+  background: color-mix(in oklab, var(--surface-1) 92%, transparent);
+  border: 1px solid var(--border); border-radius: 999px;
+  backdrop-filter: blur(6px); z-index: 4;
+}
+.plan-style-toggle button {
+  border: 0; background: none; border-radius: 999px;
+  padding: 4px 12px; font-size: 12px; font-weight: 550; color: var(--text-secondary);
+}
+.plan-style-toggle button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+:root[data-theme="dark"] .plan-style-toggle button[aria-pressed="true"],
+:root:not([data-theme="light"]) .plan-style-toggle button[aria-pressed="true"] { color: #0d0d0d; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .plan-style-toggle button[aria-pressed="true"] { color: #fff; }
+}

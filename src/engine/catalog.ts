@@ -1173,7 +1173,7 @@ export const CATALOG: SystemDef[] = [
   {
     id: 'water-pond',
     name: 'Lined pond',
-    category: 'shelter',
+    category: 'water',
     evidence: 'researched',
     summary: 'Open water: irrigation reserve, fire supply, habitat and thermal buffer.',
     unitLabel: 'm² of surface',

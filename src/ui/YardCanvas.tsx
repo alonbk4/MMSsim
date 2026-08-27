@@ -1,31 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CATALOG_BY_ID } from '../engine/catalog';
 import type { PlacementReport } from '../engine/simulate';
-import type { Placement, SystemDef } from '../engine/types';
 import { systemById, useApp, useSimulation } from '../state/store';
 import { CATEGORY_ICON, Icon } from './common';
-
-/** Ground area a placement occupies, in m². Roof systems report their roof area. */
-function areaOf(def: SystemDef, p: Placement): { m2: number; onRoof: boolean } {
-  const ground = def.footprintPerUnit * p.units;
-  const roof = (def.roofFootprintPerUnit ?? 0) * p.units;
-  return ground > 0 ? { m2: ground, onRoof: false } : { m2: Math.max(roof, 1.5), onRoof: roof > 0 };
-}
-
-/** Footprints are drawn as squares of the right area — the shape is a
- *  simplification, the area is not. */
-function sideOf(m2: number): number {
-  return Math.max(1.3, Math.sqrt(m2));
-}
-
-const CATEGORY_FILL: Record<string, string> = {
-  water: 'var(--series-1)',
-  food: 'var(--accent)',
-  energy: 'var(--series-2)',
-  sanitation: 'var(--series-3)',
-  soil: '#8a6b3f',
-  shelter: '#6b6f7a',
-};
+import { hash, planFootprint } from './plan/geometry';
+import { PAINTERS, PlanDefs, STYLE_LABEL, type PlanStyleId } from './plan/painters';
 
 export function YardCanvas() {
   const design = useApp((s) => s.design);
@@ -149,6 +128,9 @@ export function YardCanvas() {
   const lotH = Math.max(4, site.lotAreaM2 / lotW);
 
   const [touched, setTouched] = useState(false);
+  // Temporary: lets the two plan styles be compared in the real app rather
+  // than in a mockup. Collapses to whichever one is chosen.
+  const [style, setStyle] = useState<PlanStyleId>('sitePlan');
 
   const fit = useCallback(() => {
     const margin = 28;
@@ -208,75 +190,100 @@ export function YardCanvas() {
           {Math.round(lotW)} × {Math.round(lotH)} m · {Math.round(site.lotAreaM2)} m²
         </text>
 
+        <PlanDefs />
+
         {design.placements.map((p) => {
           const def = systemById(design, p.systemId);
           if (!def) return null;
-          const { m2, onRoof } = areaOf(def, p);
-          const side = sideOf(m2);
-          const px = X(p.x), py = Y(p.y), s = side * view.scale;
+          const fp = planFootprint(def, p);
+          const px = X(p.x), py = Y(p.y);
+          const wPx = fp.w * view.scale, hPx = fp.h * view.scale;
           const isSel = selected === p.id;
           const report = reports.get(p.id);
           const starved = report ? report.runRate < 0.9 : false;
-          const fill = CATEGORY_FILL[def.category] ?? 'var(--accent)';
+          const short = Math.min(wPx, hPx);
+          const paint = PAINTERS[style];
           return (
             <g
               key={p.id}
+              className={`cat-${def.category}`}
               onPointerDown={(e) => { e.stopPropagation(); onPointerDown(e, p.id); }}
               style={{ cursor: 'grab', opacity: p.enabled ? 1 : 0.4 }}
             >
-              <rect
-                x={px} y={py} width={s} height={s}
-                rx={Math.min(10, s * 0.18)}
-                fill={fill}
-                fillOpacity={def.evidence === 'experimental' ? 0.16 : 0.3}
-                stroke={fill}
-                strokeWidth={isSel ? 2.5 : 1.5}
-                strokeDasharray={def.evidence === 'experimental' || onRoof ? '5 3' : undefined}
-              />
+              {/* The plan is drawn in metres and scaled here, so a swale is a
+                  swale at every zoom and the areas stay exactly what the
+                  engine says they are. */}
+              <g transform={`translate(${px.toFixed(2)},${py.toFixed(2)}) scale(${view.scale})`}>
+                {/* Bounding hit area — cluster and blob outlines are too thin
+                    to grab reliably on a touchscreen. */}
+                <rect width={fp.w} height={fp.h} fill="transparent" />
+                {paint({
+                  def, fp, selected: isSel, starved,
+                  scale: view.scale, seed: hash(p.id),
+                })}
+              </g>
+
               {isSel && (
                 <rect
-                  x={px - 3} y={py - 3} width={s + 6} height={s + 6}
-                  rx={Math.min(12, s * 0.2)} fill="none"
-                  stroke="var(--text-primary)" strokeWidth="1" opacity="0.5"
+                  x={px - 4} y={py - 4} width={wPx + 8} height={hPx + 8}
+                  rx={8} fill="none" stroke="var(--text-primary)"
+                  strokeWidth="1.5" strokeDasharray="4 3" opacity="0.55"
                 />
               )}
-              {s > 46 ? (
+
+              {short > 52 ? (
                 <>
                   <text
-                    x={px + s / 2} y={py + s / 2 + (s > 70 ? -2 : 4)} textAnchor="middle"
+                    x={px + wPx / 2} y={py + hPx / 2 + (short > 76 ? -2 : 4)} textAnchor="middle"
                     className="plot-label"
-                    style={{ fontWeight: 600, fontSize: nameSize(s) }}
+                    style={{ fontWeight: 600, fontSize: nameSize(short), paintOrder: 'stroke',
+                             stroke: 'var(--surface-1)', strokeWidth: 3, strokeLinejoin: 'round' }}
                   >
-                    {truncate(p.label || def.name, charBudget(s))}
+                    {truncate(p.label || def.name, charBudget(wPx, short))}
                   </text>
-                  {s > 70 && (
+                  {short > 76 && (
                     <text
-                      x={px + s / 2} y={py + s / 2 + 12} textAnchor="middle" className="plot-sub"
-                      style={{ fontSize: Math.min(9.5, nameSize(s) - 1) }}
+                      x={px + wPx / 2} y={py + hPx / 2 + 12} textAnchor="middle" className="plot-sub"
+                      style={{ fontSize: Math.min(9.5, nameSize(short) - 1), paintOrder: 'stroke',
+                               stroke: 'var(--surface-1)', strokeWidth: 3, strokeLinejoin: 'round' }}
                     >
                       {trimNum(p.units)} {def.unitLabel}
                     </text>
                   )}
                 </>
               ) : isSel && (
-                // Too small to label in place. Only the selected one gets a
-                // caption, so a crowded corner of the yard stays readable.
-                <text x={px + s / 2} y={py + s + 12} textAnchor="middle" className="plot-sub">
+                <text x={px + wPx / 2} y={py + hPx + 13} textAnchor="middle" className="plot-sub">
                   {truncate(p.label || def.name, 18)}
                 </text>
               )}
+
               {starved && (
-                <circle cx={px + s - 6} cy={py + 6} r="5" fill="var(--status-serious)" stroke="var(--surface-1)" strokeWidth="1.5" />
+                <circle
+                  cx={px + wPx - 5} cy={py + 5} r="5"
+                  fill="var(--status-serious)" stroke="var(--surface-1)" strokeWidth="1.5"
+                />
               )}
-              {onRoof && s > 96 && (
-                <text x={px + s / 2} y={py + s - 7} textAnchor="middle" className="plot-sub">
+              {fp.onRoof && short > 96 && (
+                <text x={px + wPx / 2} y={py + hPx - 6} textAnchor="middle" className="plot-sub">
                   on the roof
                 </text>
               )}
             </g>
           );
         })}
+
+        <NorthArrow x={size.w - 34} y={size.h - 78} />
+        <ScaleBar x={14} y={size.h - 18} scale={view.scale} />
       </svg>
+
+      {/* Temporary while the two plan styles are being compared. */}
+      <div className="plan-style-toggle" role="group" aria-label="Plan style">
+        {(['sitePlan', 'illustrated'] as PlanStyleId[]).map((id) => (
+          <button key={id} aria-pressed={style === id} onClick={() => setStyle(id)}>
+            {STYLE_LABEL[id]}
+          </button>
+        ))}
+      </div>
 
       <div className="canvas-hud">
         <span className="pill">{gridStep} m grid</span>
@@ -298,12 +305,40 @@ function clampScale(v: number) {
 }
 
 /** Labels shrink with their plot so a 3 m² bin does not shout like a food forest. */
-function nameSize(sidePx: number): number {
-  return sidePx > 92 ? 11 : sidePx > 66 ? 10 : 9;
+function nameSize(shortPx: number): number {
+  return shortPx > 92 ? 11 : shortPx > 66 ? 10 : 9;
 }
 
-function charBudget(sidePx: number): number {
-  return Math.max(4, Math.floor((sidePx - 8) / (nameSize(sidePx) * 0.63)));
+function charBudget(widthPx: number, shortPx: number): number {
+  return Math.max(4, Math.floor((widthPx - 8) / (nameSize(shortPx) * 0.63)));
+}
+
+/** Which way is up. Every site plan has one; ours drives the sun figures too. */
+function NorthArrow({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x},${y})`} opacity="0.75" pointerEvents="none">
+      <path d="M0,-13 L5,7 L0,3 L-5,7 Z" fill="var(--text-secondary)" />
+      <text y="20" textAnchor="middle" className="plot-sub" style={{ fontWeight: 600 }}>N</text>
+    </g>
+  );
+}
+
+/** A bar you can hold a real tape measure against. */
+function ScaleBar({ x, y, scale }: { x: number; y: number; scale: number }) {
+  // Pick a round number of metres that lands near 90 px at the current zoom.
+  const target = 90 / scale;
+  const steps = [1, 2, 5, 10, 20, 50, 100];
+  const metres = steps.find((s) => s >= target) ?? 100;
+  const w = metres * scale;
+  return (
+    <g transform={`translate(${x},${y})`} pointerEvents="none">
+      <line x1="0" x2={w} y1="0" y2="0" stroke="var(--text-secondary)" strokeWidth="2" />
+      <line x1="0" x2="0" y1="-4" y2="4" stroke="var(--text-secondary)" strokeWidth="2" />
+      <line x1={w / 2} x2={w / 2} y1="-2.5" y2="2.5" stroke="var(--text-secondary)" strokeWidth="1.5" />
+      <line x1={w} x2={w} y1="-4" y2="4" stroke="var(--text-secondary)" strokeWidth="2" />
+      <text x={w / 2} y="-8" textAnchor="middle" className="plot-sub">{metres} m</text>
+    </g>
+  );
 }
 
 function truncate(s: string, n: number) {
