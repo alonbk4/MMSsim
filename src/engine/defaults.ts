@@ -23,12 +23,13 @@ export function createDefaultDesign(): Design {
     version: DESIGN_VERSION,
     site: { ...DEFAULT_SITE },
     placements: [
+      // Catchment sits on the house roof, which is where it would be.
       makePlacement('roof-catchment', 60, 1, 1),
-      makePlacement('solar-pv', 4, 10, 1),
-      makePlacement('poly-tank', 5, 16.5, 1),
-      makePlacement('annual-beds', 40, 1, 10.5),
-      makePlacement('laying-hens', 6, 9.5, 10.5),
-      makePlacement('compost-bays', 3, 14, 10.5),
+      makePlacement('solar-pv', 4, 13.5, 1),
+      makePlacement('poly-tank', 5, 13.5, 5.5),
+      makePlacement('annual-beds', 40, 1, 11),
+      makePlacement('laying-hens', 6, 13, 11),
+      makePlacement('compost-bays', 3, 13, 15),
     ],
     overrides: {},
     customSystems: [],

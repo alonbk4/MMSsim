@@ -4,7 +4,7 @@ import type { PlacementReport } from '../engine/simulate';
 import { systemById, useApp, useSimulation } from '../state/store';
 import { CATEGORY_ICON, Icon } from './common';
 import { hash, planFootprint } from './plan/geometry';
-import { PAINTERS, PlanDefs, STYLE_LABEL, type PlanStyleId } from './plan/painters';
+import { paintPlan, PlanDefs } from './plan/painters';
 
 export function YardCanvas() {
   const design = useApp((s) => s.design);
@@ -13,8 +13,10 @@ export function YardCanvas() {
   const selected = useApp((s) => s.selectedPlacementId);
   const select = useApp((s) => s.select);
   const move = useApp((s) => s.movePlacement);
+  const setSite = useApp((s) => s.setSite);
   const sim = useSimulation();
 
+  const site = design.site;
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [size, setSize] = useState({ w: 320, h: 420 });
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -22,6 +24,7 @@ export function YardCanvas() {
     | { kind: 'none' }
     | { kind: 'pan'; startX: number; startY: number; originX: number; originY: number }
     | { kind: 'drag'; id: string; dx: number; dy: number; moved: boolean }
+    | { kind: 'house'; dx: number; dy: number }
     | { kind: 'pinch'; dist: number; scale: number; cx: number; cy: number; x: number; y: number }
   >({ kind: 'none' });
 
@@ -48,7 +51,9 @@ export function YardCanvas() {
     sim.expected.placements.map((p) => [p.placementId, p]),
   );
 
-  const onPointerDown = (e: React.PointerEvent<Element>, placementId?: string) => {
+  const onPointerDown = (
+    e: React.PointerEvent<Element>, placementId?: string, house?: boolean,
+  ) => {
     (e.target as Element).setPointerCapture?.(e.pointerId);
     if (!touched) { setTouched(true); setView({ fitted: true }); }
     const pt = local(e);
@@ -68,6 +73,12 @@ export function YardCanvas() {
       return;
     }
 
+    if (house) {
+      const w = toWorld(pt.x, pt.y);
+      gesture.current = { kind: 'house', dx: w.x - site.houseX, dy: w.y - site.houseY };
+      select(null);
+      return;
+    }
     if (placementId) {
       const p = design.placements.find((q) => q.id === placementId)!;
       const w = toWorld(pt.x, pt.y);
@@ -100,6 +111,12 @@ export function YardCanvas() {
       setView({ x: g.originX + (pt.x - g.startX), y: g.originY + (pt.y - g.startY) });
       return;
     }
+    if (g.kind === 'house') {
+      const w = toWorld(pt.x, pt.y);
+      const snap = (v: number) => Math.round(v * 2) / 2;
+      setSite({ houseX: snap(w.x - g.dx), houseY: snap(w.y - g.dy) });
+      return;
+    }
     if (g.kind === 'drag') {
       const w = toWorld(pt.x, pt.y);
       const snap = (v: number) => Math.round(v * 2) / 2;
@@ -123,14 +140,10 @@ export function YardCanvas() {
     setView({ scale: next, x: px - (px - view.x) * k, y: py - (py - view.y) * k });
   };
 
-  const site = design.site;
   const lotW = Math.max(4, site.lotWidthM);
   const lotH = Math.max(4, site.lotAreaM2 / lotW);
 
   const [touched, setTouched] = useState(false);
-  // Temporary: lets the two plan styles be compared in the real app rather
-  // than in a mockup. Collapses to whichever one is chosen.
-  const [style, setStyle] = useState<PlanStyleId>('sitePlan');
 
   const fit = useCallback(() => {
     const margin = 28;
@@ -192,6 +205,16 @@ export function YardCanvas() {
 
         <PlanDefs />
 
+        {/* The sunny side. Climate presets are northern-hemisphere, so the
+            south edge is the bottom of the plan — the side you keep clear. */}
+        <SunSide x={X(0)} y={Y(lotH)} w={lotW * view.scale} />
+
+        <House
+          x={X(site.houseX)} y={Y(site.houseY)}
+          areaM2={site.roofAreaM2} scale={view.scale}
+          onPointerDown={(e) => { e.stopPropagation(); onPointerDown(e, undefined, true); }}
+        />
+
         {design.placements.map((p) => {
           const def = systemById(design, p.systemId);
           if (!def) return null;
@@ -202,7 +225,6 @@ export function YardCanvas() {
           const report = reports.get(p.id);
           const starved = report ? report.runRate < 0.9 : false;
           const short = Math.min(wPx, hPx);
-          const paint = PAINTERS[style];
           return (
             <g
               key={p.id}
@@ -217,7 +239,7 @@ export function YardCanvas() {
                 {/* Bounding hit area — cluster and blob outlines are too thin
                     to grab reliably on a touchscreen. */}
                 <rect width={fp.w} height={fp.h} fill="transparent" />
-                {paint({
+                {paintPlan({
                   def, fp, selected: isSel, starved,
                   scale: view.scale, seed: hash(p.id),
                 })}
@@ -276,15 +298,6 @@ export function YardCanvas() {
         <ScaleBar x={14} y={size.h - 18} scale={view.scale} />
       </svg>
 
-      {/* Temporary while the two plan styles are being compared. */}
-      <div className="plan-style-toggle" role="group" aria-label="Plan style">
-        {(['sitePlan', 'illustrated'] as PlanStyleId[]).map((id) => (
-          <button key={id} aria-pressed={style === id} onClick={() => setStyle(id)}>
-            {STYLE_LABEL[id]}
-          </button>
-        ))}
-      </div>
-
       <div className="canvas-hud">
         <span className="pill">{gridStep} m grid</span>
         <span className="pill">
@@ -311,6 +324,74 @@ function nameSize(shortPx: number): number {
 
 function charBudget(widthPx: number, shortPx: number): number {
   return Math.max(4, Math.floor((widthPx - 8) / (nameSize(shortPx) * 0.63)));
+}
+
+/**
+ * The house, sized from the roof area you gave it on the Site tab. It is the
+ * one thing on the plan everybody can locate instantly, which is most of why
+ * it is here — and roof-mounted systems have somewhere to sit.
+ */
+function House({
+  x, y, areaM2, scale, onPointerDown,
+}: {
+  x: number; y: number; areaM2: number; scale: number;
+  onPointerDown: (e: React.PointerEvent<SVGGElement>) => void;
+}) {
+  if (areaM2 <= 0) return null;
+  const w = Math.sqrt(areaM2 * 1.5) * scale;
+  const h = (areaM2 / Math.sqrt(areaM2 * 1.5)) * scale;
+  return (
+    <g onPointerDown={onPointerDown} style={{ cursor: 'grab' }}>
+      <rect
+        x={x} y={y} width={w} height={h} rx={4}
+        fill="var(--surface-2)" stroke="var(--text-muted)" strokeWidth="1.5"
+      />
+      {/* Ridge line, so it reads as a roof rather than a slab. */}
+      <line x1={x + w * 0.5} y1={y} x2={x + w * 0.5} y2={y + h}
+        stroke="var(--text-muted)" strokeWidth="1" opacity="0.7" />
+      {Math.min(w, h) > 46 && (
+        <text x={x + w / 2} y={y + h / 2 + 4} textAnchor="middle" className="plot-sub"
+          style={{ letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          house
+        </text>
+      )}
+    </g>
+  );
+}
+
+/** A warm wash along the sunny edge. Schematic, not a solar calculation. */
+function SunSide({ x, y, w }: { x: number; y: number; w: number }) {
+  if (w < 60) return null;
+  return (
+    <g pointerEvents="none" opacity="0.85">
+      <defs>
+        <linearGradient id="sun-side" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stopColor="var(--status-warning)" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="var(--status-warning)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <rect x={x} y={y - 30} width={w} height={30} fill="url(#sun-side)" />
+      {/* Sits inside the lot at the right edge, clear of the scale bar on the
+          left and the add button in the middle. */}
+      <g transform={`translate(${x + w - 18},${y - 15})`}>
+        <circle r="4.5" fill="var(--status-warning)" />
+        {Array.from({ length: 8 }, (_, i) => {
+          const a = (i / 8) * Math.PI * 2;
+          return (
+            <line
+              key={i}
+              x1={Math.cos(a) * 6.4} y1={Math.sin(a) * 6.4}
+              x2={Math.cos(a) * 8.6} y2={Math.sin(a) * 8.6}
+              stroke="var(--status-warning)" strokeWidth="1.4" strokeLinecap="round"
+            />
+          );
+        })}
+        {w > 300 && (
+          <text x="-14" y="4" textAnchor="end" className="plot-sub">sunniest side</text>
+        )}
+      </g>
+    </g>
+  );
 }
 
 /** Which way is up. Every site plan has one; ours drives the sun figures too. */

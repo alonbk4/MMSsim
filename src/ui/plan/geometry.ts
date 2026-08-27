@@ -41,6 +41,12 @@ export interface PlanFootprint {
 
 type Archetype =
   | { kind: 'block'; aspect?: number; rows?: number }
+  /**
+   * One mark per unit. Only valid where a unit is a countable individual —
+   * a tree, a hive, an outlet, a doe. A system sized in m² must never use
+   * this, or a 200 m² woodlot draws two hundred trees. `archetypes.test.ts`
+   * enforces it.
+   */
   | { kind: 'cluster'; itemAreaM2: number; maxItems?: number }
   | { kind: 'blob' }
   | { kind: 'band'; thickness?: number }
@@ -74,7 +80,7 @@ const ARCHETYPES: Record<string, Archetype> = {
   'battery-bank': { kind: 'block', aspect: 1.8 },
   'solar-thermal': { kind: 'roof', grid: 'panels' },
   'rocket-mass-heater': { kind: 'block', aspect: 2.2 },
-  'coppice-woodlot': { kind: 'cluster', itemAreaM2: 9, maxItems: 60 },
+  'coppice-woodlot': { kind: 'blob' },
   'solar-dehydrator': { kind: 'block', aspect: 1.6 },
   'biogas-digester': { kind: 'disc' },
   'micro-wind': { kind: 'disc' },
@@ -172,9 +178,12 @@ function buildShape(arch: Archetype, area: number, placement: Placement): PlanSh
     }
     case 'cells': {
       const per = arch.per ?? 1.3;
-      const count = Math.max(1, Math.min(8, Math.round(area / per)));
-      const cell = area / count;
-      const side = Math.sqrt(cell);
+      const MIN_SIDE = 0.75;
+      let count = Math.max(1, Math.min(5, Math.round(area / per)));
+      // Drop compartments until each one is big enough to read as a box
+      // rather than a hairline.
+      while (count > 1 && Math.sqrt(area / count) < MIN_SIDE) count--;
+      const side = Math.sqrt(area / count);
       return { kind: 'cells', w: side * count, h: side, count };
     }
     case 'enclosure': {

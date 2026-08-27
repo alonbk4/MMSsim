@@ -1,21 +1,15 @@
 /**
- * Two ways to paint the same footprint.
+ * Painting a footprint.
  *
- * Both painters receive identical geometry from `geometry.ts` and draw in
- * metres; the canvas scales the group, so areas stay exact and strokes stay
- * one pixel at every zoom level.
- *
- * - `sitePlan`    reads like a drawing you would hand a builder: paper fills,
- *                 hairlines, hatching, contour ticks.
- * - `illustrated` reads like a consumer app: filled shapes, soft depth, a
- *                 glyph badge, more colour.
+ * The painter receives geometry from `geometry.ts` and draws in metres; the
+ * canvas scales the group, so areas stay exact and strokes stay one pixel at
+ * every zoom level. Filled shapes with soft depth and a glyph badge — chosen
+ * over a drafting look because this is meant to be friendly to read.
  */
 import type { ReactNode } from 'react';
 import type { SystemCategory, SystemDef } from '../../engine/types';
-import { bandCentreline, bandPath, blobPath, mulberry, type PlanFootprint } from './geometry';
+import { bandCentreline, bandPath, blobPath, hash, mulberry, type PlanFootprint } from './geometry';
 import { PlanGlyph } from './glyphs';
-
-export type PlanStyleId = 'sitePlan' | 'illustrated';
 
 export interface PaintArgs {
   def: SystemDef;
@@ -37,38 +31,24 @@ const HAIR = { vectorEffect: 'non-scaling-stroke' as const };
 const CATEGORIES: SystemCategory[] = ['water', 'food', 'energy', 'sanitation', 'soil', 'shelter'];
 
 /**
- * Pattern fills have to be declared once per category.
- *
- * A `<pattern>` resolves CSS custom properties where it is *defined*, not
- * where it is referenced, so a single shared pattern reading `var(--cat-ink)`
- * inherits nothing and paints black. Wrapping each set in its own `.cat-*`
- * group is what makes hatching take the colour of the system using it.
+ * Shared paint. The ripple fill has to be declared once per category: a
+ * `<pattern>` resolves CSS custom properties where it is *defined*, not where
+ * it is referenced, so a single shared pattern inherits nothing and paints
+ * black.
  */
 export function PlanDefs() {
   return (
     <defs>
       {CATEGORIES.map((c) => (
         <g key={c} className={`cat-${c}`}>
-          <pattern id={`hatch-45-${c}`} width="0.62" height="0.62"
-            patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="0.62" stroke="var(--cat-ink)" strokeWidth="0.1" opacity="0.55" />
-          </pattern>
-          <pattern id={`hatch-canopy-${c}`} width="0.5" height="0.5"
-            patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
-            <line x1="0" y1="0" x2="0" y2="0.5" stroke="var(--cat-ink)" strokeWidth="0.085" opacity="0.5" />
-          </pattern>
-          <pattern id={`hatch-water-${c}`} width="1.1" height="0.62" patternUnits="userSpaceOnUse">
-            <path d="M0,0.31 q0.275,-0.18 0.55,0 t0.55,0" fill="none"
-              stroke="var(--cat-ink)" strokeWidth="0.09" opacity="0.7" />
-          </pattern>
-          <pattern id={`hatch-gravel-${c}`} width="0.58" height="0.58" patternUnits="userSpaceOnUse">
-            <circle cx="0.14" cy="0.17" r="0.07" fill="var(--cat-ink)" opacity="0.5" />
-            <circle cx="0.42" cy="0.43" r="0.055" fill="var(--cat-ink)" opacity="0.4" />
+          <pattern id={`ripple-${c}`} width="1.15" height="0.7" patternUnits="userSpaceOnUse">
+            <path d="M0,0.35 q0.29,-0.2 0.575,0 t0.575,0" fill="none"
+              stroke="var(--cat-ink)" strokeWidth="0.085" opacity="0.4" />
           </pattern>
         </g>
       ))}
 
-      {/* Illustrated depth: one soft drop shadow, reused by every mark. */}
+      {/* One soft drop shadow, reused by every mark. */}
       <filter id="ill-shadow" x="-30%" y="-30%" width="170%" height="170%">
         <feDropShadow dx="0" dy="0.12" stdDeviation="0.14" floodOpacity="0.28" />
       </filter>
@@ -81,135 +61,17 @@ export function PlanDefs() {
 }
 
 /* ====================================================================== */
-/*  Site plan                                                              */
-/* ====================================================================== */
-
-export function paintSitePlan({ def, fp, scale, seed }: PaintArgs): ReactNode {
-  const s = fp.shape;
-  const ink = 'var(--cat-ink)';
-  const paper = 'var(--surface-1)';
-  const detail = scale > 7;
-
-  switch (s.kind) {
-    case 'block':
-      return (
-        <>
-          <rect width={s.w} height={s.h} fill={paper} fillOpacity="0.75" stroke={ink} strokeWidth="1.2" style={HAIR} />
-          <rect width={s.w} height={s.h} fill={`url(#hatch-45-${def.category})`} />
-          {detail && s.rows > 0 && Array.from({ length: s.rows - 1 }, (_, i) => (
-            <line
-              key={i} x1={0} x2={s.w}
-              y1={((i + 1) * s.h) / s.rows} y2={((i + 1) * s.h) / s.rows}
-              stroke={ink} strokeWidth="0.8" opacity="0.45" style={HAIR}
-            />
-          ))}
-          <PlanGlyph def={def} w={s.w} h={s.h} tone={ink} hidden={!detail} scale={scale} />
-        </>
-      );
-
-    case 'roof':
-      return (
-        <>
-          <rect width={s.w} height={s.h} fill={paper} fillOpacity="0.7" stroke={ink}
-            strokeWidth="1.2" strokeDasharray="5 3" style={HAIR} />
-          {detail && s.grid === 'panels' && <PanelGrid w={s.w} h={s.h} stroke={ink} />}
-          {detail && s.grid === 'sheets' && (
-            <>
-              {Array.from({ length: 4 }, (_, i) => (
-                <line key={i} x1={((i + 1) * s.w) / 5} x2={((i + 1) * s.w) / 5} y1={0} y2={s.h}
-                  stroke={ink} strokeWidth="0.7" opacity="0.4" style={HAIR} />
-              ))}
-              {/* Ridge line and fall arrows: which way the water actually goes. */}
-              <line x1={0} y1={s.h / 2} x2={s.w} y2={s.h / 2} stroke={ink} strokeWidth="1.4" opacity="0.7" style={HAIR} />
-            </>
-          )}
-          <PlanGlyph def={def} w={s.w} h={s.h} tone={ink} hidden={!detail} scale={scale} />
-        </>
-      );
-
-    case 'disc':
-      return (
-        <>
-          <circle cx={s.r} cy={s.r} r={s.r} fill={paper} fillOpacity="0.8" stroke={ink} strokeWidth="1.4" style={HAIR} />
-          {detail && <circle cx={s.r} cy={s.r} r={s.r * 0.72} fill="none" stroke={ink} strokeWidth="0.8" opacity="0.5" style={HAIR} />}
-          <PlanGlyph def={def} w={s.w} h={s.h} tone={ink} hidden={!detail} scale={scale} />
-        </>
-      );
-
-    case 'blob': {
-      const d = blobPath(s.w, s.h, seed);
-      const isWater = def.category === 'water' || def.id === 'water-pond' || def.id === 'duckweed-pond';
-      return (
-        <>
-          <path d={d} fill={paper} fillOpacity="0.7" stroke={ink} strokeWidth="1.4" style={HAIR} />
-          <path d={d} fill={`url(#hatch-${isWater ? 'water' : 'canopy'}-${def.category})`} />
-        </>
-      );
-    }
-
-    case 'band': {
-      const d = bandPath(s.w, s.thickness, seed);
-      const c = bandCentreline(s.w, s.thickness, seed);
-      return (
-        <>
-          <path d={d} fill={paper} fillOpacity="0.65" stroke={ink} strokeWidth="1.2" style={HAIR} />
-          {/* Ticks along the centre line — the surveyor's mark for a contour. */}
-          {detail && <path d={c} fill="none" stroke={ink} strokeWidth="1" strokeDasharray="3 3" opacity="0.75" style={HAIR} />}
-        </>
-      );
-    }
-
-    case 'cells':
-      return (
-        <>
-          <rect width={s.w} height={s.h} fill={paper} fillOpacity="0.8" stroke={ink} strokeWidth="1.3" style={HAIR} />
-          {Array.from({ length: s.count - 1 }, (_, i) => (
-            <line key={i} x1={((i + 1) * s.w) / s.count} x2={((i + 1) * s.w) / s.count} y1={0} y2={s.h}
-              stroke={ink} strokeWidth="1.1" style={HAIR} />
-          ))}
-          {detail && <rect width={s.w} height={s.h} fill={`url(#hatch-gravel-${def.category})`} />}
-        </>
-      );
-
-    case 'enclosure':
-      return (
-        <>
-          <rect width={s.w} height={s.h} fill={paper} fillOpacity="0.6" stroke={ink}
-            strokeWidth="1.2" strokeDasharray="2 2.5" style={HAIR} />
-          <rect x={s.w - s.hut - 0.15} y={0.15} width={s.hut} height={s.hut}
-            fill={ink} fillOpacity="0.25" stroke={ink} strokeWidth="1.2" style={HAIR} />
-          {detail && <rect width={s.w} height={s.h} fill={`url(#hatch-gravel-${def.category})`} opacity="0.75" />}
-          <PlanGlyph def={def} w={s.w - s.hut} h={s.h} tone={ink} hidden={!detail} scale={scale} />
-        </>
-      );
-
-    case 'cluster':
-      return (
-        <>
-          {s.items.map((it, i) => (
-            <g key={i}>
-              <circle cx={it.x} cy={it.y} r={it.r} fill={`url(#hatch-canopy-${def.category})`} stroke={ink} strokeWidth="1.1" style={HAIR} />
-              {detail && (
-                <>
-                  <line x1={it.x - it.r * 0.2} x2={it.x + it.r * 0.2} y1={it.y} y2={it.y} stroke={ink} strokeWidth="1" style={HAIR} />
-                  <line x1={it.x} x2={it.x} y1={it.y - it.r * 0.2} y2={it.y + it.r * 0.2} stroke={ink} strokeWidth="1" style={HAIR} />
-                </>
-              )}
-            </g>
-          ))}
-        </>
-      );
-  }
-}
-
-/* ====================================================================== */
 /*  Illustrated                                                            */
 /* ====================================================================== */
 
 export function paintIllustrated({ def, fp, scale, seed }: PaintArgs): ReactNode {
   const s = fp.shape;
   const ink = 'var(--cat-ink)';
-  const fill = 'var(--cat-fill)';
+  // A yard is mostly food systems, and fifteen identically green rectangles
+  // blur together. Each system gets a small fixed step toward its category's
+  // lighter tone, so neighbours separate without leaving the palette.
+  const step = (hash(def.id) % 5) * 5.5;
+  const fill = `color-mix(in oklab, var(--cat-fill) ${100 - step}%, var(--cat-lift))`;
   const lift = 'var(--cat-lift)';
   const detail = scale > 7;
   const r = (v: number) => Math.min(0.45, v * 0.16);
@@ -267,6 +129,7 @@ export function paintIllustrated({ def, fp, scale, seed }: PaintArgs): ReactNode
               <path d={inner} fill={lift} opacity={isWater ? 0.85 : 0.5} />
             </g>
           )}
+          {detail && isWater && <path d={d} fill={`url(#ripple-${def.category})`} />}
           {detail && !isWater && <CanopyDots w={s.w} h={s.h} seed={seed} fill={ink} />}
         </g>
       );
@@ -327,21 +190,6 @@ export function paintIllustrated({ def, fp, scale, seed }: PaintArgs): ReactNode
 /*  Small shared pieces                                                    */
 /* ====================================================================== */
 
-function PanelGrid({ w, h, stroke }: { w: number; h: number; stroke: string }) {
-  const cols = Math.max(2, Math.round(w / 1.7));
-  const rows = Math.max(1, Math.round(h / 1.1));
-  return (
-    <g stroke={stroke} strokeWidth="0.7" opacity="0.55" style={HAIR}>
-      {Array.from({ length: cols - 1 }, (_, i) => (
-        <line key={`c${i}`} x1={((i + 1) * w) / cols} x2={((i + 1) * w) / cols} y1={0} y2={h} />
-      ))}
-      {Array.from({ length: rows - 1 }, (_, i) => (
-        <line key={`r${i}`} x1={0} x2={w} y1={((i + 1) * h) / rows} y2={((i + 1) * h) / rows} />
-      ))}
-    </g>
-  );
-}
-
 function PanelTiles({ w, h, fill }: { w: number; h: number; fill: string }) {
   const cols = Math.max(2, Math.round(w / 1.7));
   const rows = Math.max(1, Math.round(h / 1.1));
@@ -381,12 +229,4 @@ function CanopyDots({ w, h, seed, fill }: { w: number; h: number; seed: number; 
   );
 }
 
-export const PAINTERS: Record<PlanStyleId, (a: PaintArgs) => ReactNode> = {
-  sitePlan: paintSitePlan,
-  illustrated: paintIllustrated,
-};
-
-export const STYLE_LABEL: Record<PlanStyleId, string> = {
-  sitePlan: 'Site plan',
-  illustrated: 'Illustrated',
-};
+export { paintIllustrated as paintPlan };

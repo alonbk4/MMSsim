@@ -186,8 +186,11 @@ export interface SiteProfile {
   lotAreaM2: number;
   /** Width of the lot in metres; depth is derived from the area. */
   lotWidthM: number;
-  /** Roof area available for catchment/PV, m². */
+  /** Roof area available for catchment/PV, m². Also sets the drawn house. */
   roofAreaM2: number;
+  /** Where the house sits on the plan, metres from the lot's top-left. */
+  houseX: number;
+  houseY: number;
   household: number;
   /** Litres of potable-grade water per person per day. */
   waterUsePerPersonLPerDay: number;

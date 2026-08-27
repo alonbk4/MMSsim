@@ -171,6 +171,8 @@ export const DEFAULT_SITE: SiteProfile = {
   lotAreaM2: 600,
   lotWidthM: 20,
   roofAreaM2: 90,
+  houseX: 0.5,
+  houseY: 0.5,
   household: 3,
   waterUsePerPersonLPerDay: 120,
   electricityPerPersonKwhPerDay: 4,
