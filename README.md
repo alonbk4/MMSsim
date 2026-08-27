@@ -96,6 +96,16 @@ demand and heating degree days. That is why a solar array in the arid preset
 outproduces the same array in the oceanic one, and why a bed in a cold
 continental climate concentrates its whole yield into four months.
 
+**Sun comes from geometry.** The climate preset knows how cloudy a place is;
+latitude knows how much sun there is to be blocked, how high it climbs and how
+long the day runs. Set a latitude and the monthly sun-hours are recomputed
+from the standard FAO-56 solar equations at the preset's own clearness, so a
+Mediterranean climate at 55°N means sunny weather with a northern sun angle
+rather than Andalusian irradiance. Panels follow. Crossing the equator flips
+the seasonal series. The canvas draws the result as a real sun-path diagram —
+polar projection, centre overhead, rim at the horizon — for the longest and
+shortest days at your latitude.
+
 **Input chains are solved, not assumed.** Each month runs a damped fixed-point
 pass: a system that cannot get its required inputs is derated, which changes
 what is available to everything downstream. Hens with no feed source run at a

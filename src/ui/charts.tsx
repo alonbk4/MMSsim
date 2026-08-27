@@ -284,6 +284,45 @@ function MonthTooltip({
   );
 }
 
+/** One series: hours of usable sun per day, month by month. */
+export function SunHoursChart({ hours, height = 112 }: { hours: number[]; height?: number }) {
+  const { ref, width } = useMeasure<HTMLDivElement>();
+  const pad = { top: 8, right: 8, bottom: 20, left: 30 };
+  const w = Math.max(240, width);
+  const plotW = w - pad.left - pad.right;
+  const plotH = height - pad.top - pad.bottom;
+  const ticks = niceTicks(Math.max(1, ...hours), 3);
+  const top = Math.max(...hours, ticks[ticks.length - 1], 1);
+  const y = (v: number) => pad.top + plotH - (v / top) * plotH;
+  const band = plotW / 12;
+  const cx = (i: number) => pad.left + band * (i + 0.5);
+  const barW = Math.max(4, Math.min(18, band * 0.55));
+
+  return (
+    <div ref={ref}>
+      <svg width={w} height={height} role="img" aria-label="Hours of usable sun per day, by month">
+        {ticks.map((t) => (
+          <g key={t}>
+            <line x1={pad.left} x2={w - pad.right} y1={y(t)} y2={y(t)} stroke="var(--gridline)" />
+            <text x={pad.left - 5} y={y(t) + 3.5} textAnchor="end" className="plot-sub">{compact(t)}</text>
+          </g>
+        ))}
+        {hours.map((v, i) => (
+          <rect
+            key={i} x={cx(i) - barW / 2} y={y(v)} width={barW}
+            height={Math.max(0, y(0) - y(v))} rx={Math.min(4, barW / 2)}
+            fill="var(--status-warning)"
+          />
+        ))}
+        <line x1={pad.left} x2={w - pad.right} y1={y(0)} y2={y(0)} stroke="var(--baseline)" />
+        {MONTHS.map((mo, i) => (
+          <text key={mo} x={cx(i)} y={height - 6} textAnchor="middle" className="plot-sub">{mo[0]}</text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 /** Two mm-per-month series on one axis: what falls, and what evaporates. */
 export function ClimateChart({
   rainfall, eto, height = 130,

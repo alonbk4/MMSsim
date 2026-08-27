@@ -172,6 +172,12 @@ export type ClimatePresetId =
 export interface SiteProfile {
   name: string;
   climate: ClimatePresetId;
+  /**
+   * Degrees north (positive) or south (negative). Drives the sun: how high it
+   * gets, how long the day is, and how much energy reaches the ground before
+   * cloud is accounted for.
+   */
+  latitude: number;
   /** Total annual rainfall, mm. Scales the preset's monthly distribution. */
   annualRainfallMm: number;
   /** Monthly rainfall distribution as fractions summing to 1. */

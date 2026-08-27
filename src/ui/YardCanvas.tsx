@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CATALOG_BY_ID } from '../engine/catalog';
 import type { PlacementReport } from '../engine/simulate';
+import type { Placement } from '../engine/types';
 import { systemById, useApp, useSimulation } from '../state/store';
 import { CATEGORY_ICON, Icon } from './common';
+import { longestDay, shortestDay, sunSummary, sunTrack } from '../engine/solar';
 import { hash, planFootprint } from './plan/geometry';
 import { paintPlan, PlanDefs } from './plan/painters';
 
@@ -13,6 +15,7 @@ export function YardCanvas() {
   const selected = useApp((s) => s.selectedPlacementId);
   const select = useApp((s) => s.select);
   const move = useApp((s) => s.movePlacement);
+  const update = useApp((s) => s.updatePlacement);
   const setSite = useApp((s) => s.setSite);
   const sim = useSimulation();
 
@@ -25,6 +28,7 @@ export function YardCanvas() {
     | { kind: 'pan'; startX: number; startY: number; originX: number; originY: number }
     | { kind: 'drag'; id: string; dx: number; dy: number; moved: boolean }
     | { kind: 'house'; dx: number; dy: number }
+    | { kind: 'resize'; id: string; startUnits: number; startDiag: number }
     | { kind: 'pinch'; dist: number; scale: number; cx: number; cy: number; x: number; y: number }
   >({ kind: 'none' });
 
@@ -50,6 +54,20 @@ export function YardCanvas() {
   const reports = new Map<string, PlacementReport>(
     sim.expected.placements.map((p) => [p.placementId, p]),
   );
+
+  /** Start a corner drag. Area scales with the square of the diagonal, which
+   *  is what makes dragging feel like resizing rather than stretching. */
+  const onResizeDown = (e: React.PointerEvent<Element>, p: Placement) => {
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    const pt = local(e);
+    pointers.current.set(e.pointerId, pt);
+    const w = toWorld(pt.x, pt.y);
+    const diag = Math.max(0.4, Math.hypot(w.x - p.x, w.y - p.y));
+    gesture.current = { kind: 'resize', id: p.id, startUnits: p.units, startDiag: diag };
+    setResizing(p.id);
+    if (!touched) { setTouched(true); setView({ fitted: true }); }
+  };
 
   const onPointerDown = (
     e: React.PointerEvent<Element>, placementId?: string, house?: boolean,
@@ -111,6 +129,19 @@ export function YardCanvas() {
       setView({ x: g.originX + (pt.x - g.startX), y: g.originY + (pt.y - g.startY) });
       return;
     }
+    if (g.kind === 'resize') {
+      const w = toWorld(pt.x, pt.y);
+      const p = design.placements.find((q) => q.id === g.id);
+      const def = p ? systemById(design, p.systemId) : undefined;
+      if (!p || !def) return;
+      const diag = Math.max(0.4, Math.hypot(w.x - p.x, w.y - p.y));
+      const k = diag / g.startDiag;
+      const raw = g.startUnits * k * k;
+      const stepped = Math.round(raw / def.unitStep) * def.unitStep;
+      const units = Math.max(def.unitMin, Math.min(def.unitMax, Number(stepped.toFixed(4))));
+      if (units !== p.units) update(g.id, { units });
+      return;
+    }
     if (g.kind === 'house') {
       const w = toWorld(pt.x, pt.y);
       const snap = (v: number) => Math.round(v * 2) / 2;
@@ -127,7 +158,10 @@ export function YardCanvas() {
 
   const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
     pointers.current.delete(e.pointerId);
-    if (pointers.current.size === 0) gesture.current = { kind: 'none' };
+    if (pointers.current.size === 0) {
+      gesture.current = { kind: 'none' };
+      setResizing(null);
+    }
   };
 
   const onWheel = (e: React.WheelEvent<SVGSVGElement>) => {
@@ -144,6 +178,7 @@ export function YardCanvas() {
   const lotH = Math.max(4, site.lotAreaM2 / lotW);
 
   const [touched, setTouched] = useState(false);
+  const [resizing, setResizing] = useState<string | null>(null);
 
   const fit = useCallback(() => {
     const margin = 28;
@@ -205,9 +240,12 @@ export function YardCanvas() {
 
         <PlanDefs />
 
-        {/* The sunny side. Climate presets are northern-hemisphere, so the
-            south edge is the bottom of the plan — the side you keep clear. */}
-        <SunSide x={X(0)} y={Y(lotH)} w={lotW * view.scale} />
+        {/* North is up, so the sun comes from the bottom of the plan in the
+            northern hemisphere and the top in the southern. */}
+        <SunSide
+          x={X(0)} y={site.latitude < 0 ? Y(0) : Y(lotH)}
+          w={lotW * view.scale} flip={site.latitude < 0}
+        />
 
         <House
           x={X(site.houseX)} y={Y(site.houseY)}
@@ -285,6 +323,40 @@ export function YardCanvas() {
                   fill="var(--status-serious)" stroke="var(--surface-1)" strokeWidth="1.5"
                 />
               )}
+
+              {isSel && (
+                <g
+                  onPointerDown={(e) => onResizeDown(e, p)}
+                  style={{ cursor: 'nwse-resize' }}
+                >
+                  {/* Generous invisible target — the visible dot is too small
+                      for a fingertip. */}
+                  <circle cx={px + wPx} cy={py + hPx} r="16" fill="transparent" />
+                  <circle
+                    cx={px + wPx} cy={py + hPx} r="7"
+                    fill="var(--surface-1)" stroke="var(--accent)" strokeWidth="2"
+                  />
+                  <path
+                    d={`M${px + wPx - 2.6},${py + hPx + 2.6} L${px + wPx + 2.6},${py + hPx - 2.6}`}
+                    stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"
+                  />
+                </g>
+              )}
+
+              {resizing === p.id && (
+                <g pointerEvents="none">
+                  <rect
+                    x={px + wPx - 46} y={py + hPx + 14} width={92} height={24} rx={12}
+                    fill="var(--surface-1)" stroke="var(--border)" strokeWidth="1"
+                  />
+                  <text
+                    x={px + wPx} y={py + hPx + 30} textAnchor="middle"
+                    className="plot-label" style={{ fontWeight: 600 }}
+                  >
+                    {trimNum(p.units)} {def.unitLabel}
+                  </text>
+                </g>
+              )}
               {fp.onRoof && short > 96 && (
                 <text x={px + wPx / 2} y={py + hPx - 6} textAnchor="middle" className="plot-sub">
                   on the roof
@@ -294,7 +366,9 @@ export function YardCanvas() {
           );
         })}
 
-        <NorthArrow x={size.w - 34} y={size.h - 78} />
+        {/* Top-left is the only corner neither the inspector sheet (right on
+            desktop, bottom on a phone) nor the add button ever covers. */}
+        <SunRose x={52} y={size.h > 380 ? 168 : 120} latitude={site.latitude} />
         <ScaleBar x={14} y={size.h - 18} scale={view.scale} />
       </svg>
 
@@ -359,47 +433,81 @@ function House({
   );
 }
 
-/** A warm wash along the sunny edge. Schematic, not a solar calculation. */
-function SunSide({ x, y, w }: { x: number; y: number; w: number }) {
+/** A warm wash along whichever edge the midday sun comes from. */
+function SunSide({ x, y, w, flip }: { x: number; y: number; w: number; flip: boolean }) {
   if (w < 60) return null;
+  const h = 30;
   return (
     <g pointerEvents="none" opacity="0.85">
       <defs>
-        <linearGradient id="sun-side" x1="0" y1="1" x2="0" y2="0">
+        <linearGradient id="sun-side" x1="0" y1={flip ? '0' : '1'} x2="0" y2={flip ? '1' : '0'}>
           <stop offset="0%" stopColor="var(--status-warning)" stopOpacity="0.22" />
           <stop offset="100%" stopColor="var(--status-warning)" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <rect x={x} y={y - 30} width={w} height={30} fill="url(#sun-side)" />
-      {/* Sits inside the lot at the right edge, clear of the scale bar on the
-          left and the add button in the middle. */}
-      <g transform={`translate(${x + w - 18},${y - 15})`}>
-        <circle r="4.5" fill="var(--status-warning)" />
-        {Array.from({ length: 8 }, (_, i) => {
-          const a = (i / 8) * Math.PI * 2;
-          return (
-            <line
-              key={i}
-              x1={Math.cos(a) * 6.4} y1={Math.sin(a) * 6.4}
-              x2={Math.cos(a) * 8.6} y2={Math.sin(a) * 8.6}
-              stroke="var(--status-warning)" strokeWidth="1.4" strokeLinecap="round"
-            />
-          );
-        })}
-        {w > 300 && (
-          <text x="-14" y="4" textAnchor="end" className="plot-sub">sunniest side</text>
-        )}
-      </g>
+      <rect x={x} y={flip ? y : y - h} width={w} height={h} fill="url(#sun-side)" />
+      {w > 300 && (
+        <text
+          x={x + w - 12} y={flip ? y + 19 : y - 11} textAnchor="end" className="plot-sub"
+        >
+          sunniest side
+        </text>
+      )}
     </g>
   );
 }
 
-/** Which way is up. Every site plan has one; ours drives the sun figures too. */
-function NorthArrow({ x, y }: { x: number; y: number }) {
+/**
+ * A sun-path rose: where the sun rises, how high it climbs and where it sets,
+ * on the longest and shortest days at this latitude.
+ *
+ * Drawn as the standard polar projection — the centre is straight overhead,
+ * the outer circle is the horizon — so a tight arc means a high sun and a wide
+ * one means a low winter sun raking across the yard. Screen-anchored rather
+ * than laid over the plan, where the arcs would tangle with the planting.
+ */
+function SunRose({ x, y, latitude }: { x: number; y: number; latitude: number }) {
+  const R = 30;
+  const project = (az: number, alt: number) => {
+    const r = (R * (90 - Math.max(0, alt))) / 90;
+    return [Math.sin(az * (Math.PI / 180)) * r, -Math.cos(az * (Math.PI / 180)) * r];
+  };
+  const pathFor = (day: number) => {
+    const track = sunTrack(latitude, day, 33);
+    if (track.length === 0) return '';
+    return track
+      .map((p, i) => {
+        const [px, py] = project(p.azimuth, p.altitude);
+        return `${i === 0 ? 'M' : 'L'}${px.toFixed(2)},${py.toFixed(2)}`;
+      })
+      .join(' ');
+  };
+  const summer = pathFor(longestDay(latitude));
+  const winter = pathFor(shortestDay(latitude));
+  const sun = sunSummary(latitude);
+  const [nx, ny] = project(latitude >= 0 ? 180 : 0, sun.summerNoon);
+
   return (
-    <g transform={`translate(${x},${y})`} opacity="0.75" pointerEvents="none">
-      <path d="M0,-13 L5,7 L0,3 L-5,7 Z" fill="var(--text-secondary)" />
-      <text y="20" textAnchor="middle" className="plot-sub" style={{ fontWeight: 600 }}>N</text>
+    <g transform={`translate(${x},${y})`} pointerEvents="none">
+      <title>
+        {`Sun path at ${Math.abs(latitude).toFixed(0)}° ${latitude < 0 ? 'S' : 'N'}: `
+          + `${Math.round(sun.summerNoon)}° high on the longest day, `
+          + `${Math.round(Math.max(0, sun.winterNoon))}° on the shortest.`}
+      </title>
+      <circle r={R} fill="var(--surface-1)" fillOpacity="0.7"
+        stroke="var(--border)" strokeWidth="1" />
+      <line x1={-R} x2={R} y1="0" y2="0" stroke="var(--gridline)" strokeWidth="1" />
+      <line x1="0" x2="0" y1={-R} y2={R} stroke="var(--gridline)" strokeWidth="1" />
+      {winter && (
+        <path d={winter} fill="none" stroke="var(--text-secondary)" strokeWidth="1.9" strokeLinecap="round" />
+      )}
+      {summer && (
+        <path d={summer} fill="none" stroke="var(--status-warning)" strokeWidth="2" strokeLinecap="round" />
+      )}
+      {summer && <circle cx={nx} cy={ny} r="3" fill="var(--status-warning)" />}
+      <path d={`M0,${-R - 4} l3.4,7 l-3.4,-2.4 l-3.4,2.4 Z`} fill="var(--text-secondary)" />
+      <text y={-R - 8} textAnchor="middle" className="plot-sub" style={{ fontWeight: 600 }}>N</text>
+      <text y={R + 15} textAnchor="middle" className="plot-sub">sun path</text>
     </g>
   );
 }

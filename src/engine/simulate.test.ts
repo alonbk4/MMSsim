@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CATALOG_BY_ID } from './catalog';
-import { buildDrivers, CLIMATE_PRESETS, DEFAULT_SITE, siteFromPreset } from './climate';
+import { applyLatitude, buildDrivers, CLIMATE_PRESETS, DEFAULT_SITE, siteFromPreset } from './climate';
 import { createDefaultDesign, emptyDesign, makePlacement } from './defaults';
 import { RESOURCE_ORDER } from './resources';
 import { simulate } from './simulate';
@@ -54,6 +54,22 @@ describe('physical flows', () => {
     // ~845 kWh/kWp/year for the temperate oceanic default.
     expect(kwh / 4).toBeGreaterThan(700);
     expect(kwh / 4).toBeLessThan(1000);
+  });
+
+  it('ties panel output to latitude, not just to the climate preset', () => {
+    const design = designWith(makePlacement('solar-pv', 4, 0, 0));
+    const at40 = simulate({ ...design, site: applyLatitude(design.site, 40) }, CATALOG_BY_ID);
+    const at60 = simulate({ ...design, site: applyLatitude(design.site, 60) }, CATALOG_BY_ID);
+    const kwh = (r: ReturnType<typeof simulate>) => r.expected.resources.electricity.produced;
+    expect(kwh(at40)).toBeGreaterThan(kwh(at60) * 1.15);
+
+    // And the seasonal swing widens as you go north: a December in Scotland is
+    // not a December in Sicily.
+    const swing = (r: ReturnType<typeof simulate>) => {
+      const m = r.expected.resources.electricity.months.map((x) => x.produced);
+      return Math.max(...m) / Math.max(1e-9, Math.min(...m));
+    };
+    expect(swing(at60)).toBeGreaterThan(swing(at40));
   });
 
   it('scales output with the site, not just the system', () => {

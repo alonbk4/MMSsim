@@ -1,3 +1,4 @@
+import { clearnessIndex, peakSunHoursAt } from './solar';
 import type { ClimatePresetId, DriverId, SiteProfile } from './types';
 
 export const MONTHS = [
@@ -11,6 +12,8 @@ export interface ClimatePreset {
   id: ClimatePresetId;
   label: string;
   blurb: string;
+  /** The latitude this preset's sun figures were written for. */
+  refLatitude: number;
   annualRainfallMm: number;
   /** Fractions of annual rain, summing to 1. */
   rainfallShape: number[];
@@ -26,6 +29,7 @@ export interface ClimatePreset {
 export const CLIMATE_PRESETS: ClimatePreset[] = [
   {
     id: 'mediterranean',
+    refLatitude: 38,
     label: 'Mediterranean',
     blurb: 'Wet cool winter, hot bone-dry summer. Storage is everything here.',
     annualRainfallMm: 550,
@@ -36,6 +40,7 @@ export const CLIMATE_PRESETS: ClimatePreset[] = [
   },
   {
     id: 'temperateOceanic',
+    refLatitude: 52,
     label: 'Temperate oceanic',
     blurb: 'Rain spread through the year, mild, low summer sun. Water is easy, sun is not.',
     annualRainfallMm: 850,
@@ -46,6 +51,7 @@ export const CLIMATE_PRESETS: ClimatePreset[] = [
   },
   {
     id: 'humidSubtropical',
+    refLatitude: 34,
     label: 'Humid subtropical',
     blurb: 'Warm and wet, long growing season, high evaporation and mould pressure.',
     annualRainfallMm: 1200,
@@ -56,6 +62,7 @@ export const CLIMATE_PRESETS: ClimatePreset[] = [
   },
   {
     id: 'coldContinental',
+    refLatitude: 47,
     label: 'Cold continental',
     blurb: 'Hard winter, short intense growing season. Season extension and storage dominate.',
     annualRainfallMm: 700,
@@ -66,6 +73,7 @@ export const CLIMATE_PRESETS: ClimatePreset[] = [
   },
   {
     id: 'aridDesert',
+    refLatitude: 30,
     label: 'Arid / desert',
     blurb: 'Very little rain, brutal evaporation, abundant sun. Every litre is designed for.',
     annualRainfallMm: 180,
@@ -76,6 +84,7 @@ export const CLIMATE_PRESETS: ClimatePreset[] = [
   },
   {
     id: 'tropicalWetDry',
+    refLatitude: 13,
     label: 'Tropical wet & dry',
     blurb: 'A monsoon you must catch and a dry season you must survive.',
     annualRainfallMm: 1400,
@@ -149,20 +158,59 @@ export function buildDrivers(site: SiteProfile): DriverSeries {
 }
 
 export function siteFromPreset(preset: ClimatePreset, base: SiteProfile): SiteProfile {
-  return {
+  const southern = base.latitude < 0;
+  const flip = (xs: number[]) => (southern ? shiftHemisphere(xs) : [...xs]);
+  const next: SiteProfile = {
     ...base,
     climate: preset.id,
     annualRainfallMm: preset.annualRainfallMm,
-    rainfallShape: [...preset.rainfallShape],
+    rainfallShape: flip(preset.rainfallShape),
     peakSunHours: [...preset.peakSunHours],
-    meanTempC: [...preset.meanTempC],
-    etoMm: [...preset.etoMm],
+    meanTempC: flip(preset.meanTempC),
+    etoMm: flip(preset.etoMm),
+  };
+  // Picking a climate also moves you to where that climate is — otherwise
+  // choosing "Arid / desert" while sitting at 60°N quietly keeps northern sun
+  // angles. The hemisphere you are in is preserved.
+  const hemisphere = base.latitude < 0 ? -1 : 1;
+  return applyLatitude(next, hemisphere * preset.refLatitude);
+}
+
+/**
+ * Move the site to a latitude and recompute what the sun does there.
+ *
+ * The climate preset knows how cloudy a place is; latitude knows how much sun
+ * is available to be blocked. Holding the preset's clearness and recomputing
+ * from geometry is what lets "Mediterranean at 55°N" mean a sunny climate with
+ * a northern sun angle, rather than silently keeping Andalusian sun-hours.
+ *
+ * Crossing the equator flips the seasonal series, since a January in Chile is
+ * not a January in Spain.
+ */
+export function applyLatitude(site: SiteProfile, latitude: number): SiteProfile {
+  const lat = Math.max(-66, Math.min(66, latitude));
+  const preset = CLIMATE_PRESETS.find((p) => p.id === site.climate);
+  const clearness = preset
+    ? clearnessIndex(preset.peakSunHours, preset.refLatitude)
+    : clearnessIndex(site.peakSunHours, site.latitude || 45);
+
+  const crossedEquator = Math.sign(lat || 1) !== Math.sign(site.latitude || 1);
+  const flip = (xs: number[]) => (crossedEquator ? shiftHemisphere(xs) : xs);
+
+  return {
+    ...site,
+    latitude: lat,
+    peakSunHours: peakSunHoursAt(lat, clearness),
+    rainfallShape: flip(site.rainfallShape),
+    meanTempC: flip(site.meanTempC),
+    etoMm: flip(site.etoMm),
   };
 }
 
-export const DEFAULT_SITE: SiteProfile = {
+const BASE_SITE: SiteProfile = {
   name: 'My yard',
   climate: 'temperateOceanic',
+  latitude: 52,
   annualRainfallMm: 850,
   rainfallShape: [...CLIMATE_PRESETS[1].rainfallShape],
   peakSunHours: [...CLIMATE_PRESETS[1].peakSunHours],
@@ -181,3 +229,10 @@ export const DEFAULT_SITE: SiteProfile = {
   greywaterFraction: 0.55,
   soil: 'loam',
 };
+
+/**
+ * Derived rather than written down, so the starting site's sun figures are
+ * exactly what its latitude produces. Otherwise nudging the latitude slider by
+ * a degree would visibly jump the whole curve.
+ */
+export const DEFAULT_SITE: SiteProfile = applyLatitude(BASE_SITE, BASE_SITE.latitude);

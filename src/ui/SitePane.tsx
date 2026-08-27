@@ -1,7 +1,8 @@
-import { buildDrivers, CLIMATE_PRESETS, getPreset, siteFromPreset } from '../engine/climate';
+import { applyLatitude, buildDrivers, CLIMATE_PRESETS, getPreset, siteFromPreset } from '../engine/climate';
+import { sunSummary } from '../engine/solar';
 import type { SiteProfile } from '../engine/types';
 import { useApp } from '../state/store';
-import { ClimateChart } from './charts';
+import { ClimateChart, SunHoursChart } from './charts';
 import { compact, Field } from './common';
 
 export function SitePane() {
@@ -39,6 +40,14 @@ export function SitePane() {
             </Field>
             <p className="card-note">{preset.blurb}</p>
           </div>
+        </div>
+
+        <div className="card">
+          <header>
+            <h2>Where you are</h2>
+            <span className="sub">latitude sets the sun</span>
+          </header>
+          <LatitudeControl />
         </div>
 
         <div className="card">
@@ -123,6 +132,72 @@ export function SitePane() {
           cheapest instrument in this whole app.
         </p>
       </div>
+    </div>
+  );
+}
+
+function LatitudeControl() {
+  const site = useApp((s) => s.design.site);
+  const setSite = useApp((s) => s.setSite);
+  const sun = sunSummary(site.latitude);
+  const hemisphere = site.latitude < 0 ? 'S' : 'N';
+
+  const move = (lat: number) => setSite(applyLatitude(site, lat));
+
+  return (
+    <div className="stack">
+      <Field
+        label="Latitude"
+        value={`${Math.abs(site.latitude).toFixed(1)}° ${hemisphere}`}
+      >
+        <input
+          type="range" min={-66} max={66} step={0.5}
+          value={site.latitude}
+          onChange={(e) => move(Number(e.target.value))}
+        />
+        <div className="row" style={{ gap: 8 }}>
+          <input
+            type="number" min={-66} max={66} step={0.1}
+            value={Number(site.latitude.toFixed(1))}
+            onChange={(e) => move(Number(e.target.value))}
+            style={{ maxWidth: 110 }}
+          />
+          <span className="meta-line">
+            negative is south of the equator
+          </span>
+        </div>
+      </Field>
+
+      <div className="tiles">
+        <div className="tile">
+          <div className="label">Midsummer sun</div>
+          <div className="figure">{Math.round(sun.summerNoon)}°</div>
+          <div className="range">{sun.summerDayLength.toFixed(1)} h of daylight</div>
+        </div>
+        <div className="tile">
+          <div className="label">Midwinter sun</div>
+          <div className="figure">{Math.round(Math.max(0, sun.winterNoon))}°</div>
+          <div className="range">
+            {sun.winterNoon <= 0
+              ? 'sun stays below the horizon'
+              : `${sun.winterDayLength.toFixed(1)} h of daylight`}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 550 }}>
+          Usable sun, hours per day
+        </label>
+        <SunHoursChart hours={site.peakSunHours} />
+      </div>
+
+      <p className="card-note" style={{ marginBottom: 0 }}>
+        The climate preset says how cloudy a place is; latitude says how much sun
+        there is to be blocked, how high it climbs and how long the day runs. Move
+        this and the sun figures — and everything that depends on them, panels
+        included — recompute from geometry. Crossing the equator flips the seasons.
+      </p>
     </div>
   );
 }
