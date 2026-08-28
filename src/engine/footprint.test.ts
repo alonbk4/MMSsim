@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { CATALOG } from '../../engine/catalog';
-import { makePlacement } from '../../engine/defaults';
-import { planFootprint } from './geometry';
+import { CATALOG } from './catalog';
+import { makePlacement } from './defaults';
+import { planFootprint } from './footprint';
 
 describe('plan footprints', () => {
   it('draws something visible and roughly tappable for every system', () => {

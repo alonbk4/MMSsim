@@ -1,5 +1,5 @@
 /**
- * Plan geometry — what shape a system actually is on the ground.
+ * Footprints — what shape a system actually is on the ground.
  *
  * The canvas used to draw every placement as a square of the right area. The
  * area was honest and everything else was a lie: a pond, a hedge and a hen run
@@ -9,7 +9,7 @@
  *
  * Areas stay exact. Only the outline changes.
  */
-import type { Placement, SystemDef, SystemCategory } from '../../engine/types';
+import type { Placement, SystemDef, SystemCategory } from './types';
 
 export type PlanShape =
   /** A rectangle. `rows` draws planting rows or bays inside it. */

@@ -5,7 +5,7 @@ import type { Placement } from '../engine/types';
 import { systemById, useApp, useSimulation } from '../state/store';
 import { CATEGORY_ICON, Icon } from './common';
 import { longestDay, shortestDay, sunSummary, sunTrack } from '../engine/solar';
-import { hash, planFootprint } from './plan/geometry';
+import { hash, planFootprint } from '../engine/footprint';
 import { paintPlan, PlanDefs } from './plan/painters';
 
 export function YardCanvas() {

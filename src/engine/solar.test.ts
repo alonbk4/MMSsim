@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { CLIMATE_PRESETS, DEFAULT_SITE, applyLatitude, getPreset, siteFromPreset } from './climate';
+import {
+  applyLatitude, applySlope, buildDrivers, CLIMATE_PRESETS, DEFAULT_SITE,
+  getPreset, runoffFraction, siteFromPreset, solarLatitude,
+} from './climate';
 import {
   clearSkyDaily, clearnessIndex, dayLengthMonthly, DECEMBER_SOLSTICE, JUNE_SOLSTICE,
   noonAltitude, peakSunHoursAt, sunSummary, sunTrack,
@@ -99,5 +102,47 @@ describe('latitude and the climate preset', () => {
     const b = applyLatitude(a, 60);
     expect(b.meanTempC).toEqual(a.meanTempC);
     expect(b.rainfallShape).toEqual(a.rainfallShape);
+  });
+});
+
+describe('slope', () => {
+  it('makes an equator-facing slope behave like a lower latitude', () => {
+    const flat = { ...DEFAULT_SITE, slopePercent: 0 };
+    const facing = { ...DEFAULT_SITE, slopePercent: 20, slopeAspect: 180 };
+    const away = { ...DEFAULT_SITE, slopePercent: 20, slopeAspect: 0 };
+    expect(solarLatitude(facing)).toBeLessThan(solarLatitude(flat));
+    expect(solarLatitude(away)).toBeGreaterThan(solarLatitude(flat));
+    // A slope across the fall line is neutral.
+    expect(solarLatitude({ ...DEFAULT_SITE, slopePercent: 20, slopeAspect: 90 }))
+      .toBeCloseTo(solarLatitude(flat), 6);
+  });
+
+  it('flips which way is the good slope below the equator', () => {
+    const south = applyLatitude(DEFAULT_SITE, -34);
+    const facingNorth = solarLatitude({ ...south, slopePercent: 20, slopeAspect: 0 });
+    const facingSouth = solarLatitude({ ...south, slopePercent: 20, slopeAspect: 180 });
+    // Below the equator the sun is in the north, so a north-facing slope gains.
+    expect(Math.abs(facingNorth)).toBeLessThan(Math.abs(facingSouth));
+  });
+
+  it('gives an equator-facing slope more winter sun', () => {
+    const flat = applySlope(DEFAULT_SITE, 0, 180);
+    const tilted = applySlope(DEFAULT_SITE, 25, 180);
+    expect(tilted.peakSunHours[11]).toBeGreaterThan(flat.peakSunHours[11]);
+  });
+
+  it('sheds more water off steep clay than off flat sand', () => {
+    const flatSand = { ...DEFAULT_SITE, soil: 'sand' as const, slopePercent: 0 };
+    const steepClay = { ...DEFAULT_SITE, soil: 'clay' as const, slopePercent: 25 };
+    expect(runoffFraction(steepClay)).toBeGreaterThan(runoffFraction(flatSand) * 2);
+    expect(runoffFraction(steepClay)).toBeLessThanOrEqual(0.85);
+  });
+
+  it('raises irrigation demand on ground that sheds its rain', () => {
+    const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+    const flat = buildDrivers({ ...DEFAULT_SITE, soil: 'sand', slopePercent: 0 });
+    const steep = buildDrivers({ ...DEFAULT_SITE, soil: 'clay', slopePercent: 25 });
+    expect(sum(steep.irrigationDemandPerM2)).toBeGreaterThan(sum(flat.irrigationDemandPerM2));
+    expect(sum(steep.runoffMm)).toBeGreaterThan(sum(flat.runoffMm));
   });
 });

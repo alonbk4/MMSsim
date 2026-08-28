@@ -8,7 +8,7 @@
  */
 import type { ReactNode } from 'react';
 import type { SystemCategory, SystemDef } from '../../engine/types';
-import { bandCentreline, bandPath, blobPath, hash, mulberry, type PlanFootprint } from './geometry';
+import { bandCentreline, bandPath, blobPath, hash, mulberry, type PlanFootprint } from '../../engine/footprint';
 import { PlanGlyph } from './glyphs';
 
 export interface PaintArgs {

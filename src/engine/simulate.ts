@@ -1,5 +1,8 @@
+import { CATALOG_BY_ID } from './catalog';
 import { buildDrivers, DAYS_IN_MONTH, type DriverSeries } from './climate';
+import { planFootprint } from './footprint';
 import { EVIDENCE, RESOURCES, RESOURCE_ORDER } from './resources';
+import { sunExposure, type ExposureReport } from './shade';
 import type {
   Design, EvidenceTier, Placement, Rate, ResourceId, SeasonProfileId,
   SiteProfile, SystemDef, SystemOverride,
@@ -51,6 +54,10 @@ export interface PlacementReport {
   footprintM2: number;
   roofM2: number;
   evidence: EvidenceTier;
+  /** Share of available sunlight this plot receives across the year, 0..1. */
+  sunExposure: number;
+  /** What costs it the most light, when something does. */
+  shadedBy?: { label: string; lost: number };
 }
 
 export interface Warning {
@@ -198,6 +205,22 @@ interface ActiveSystem {
   def: SystemDef;
   /** Output multiplier for the current scenario, from the evidence tier. */
   confidence: number;
+  /** What the obstructions on site leave this plot, month by month. */
+  exposure: ExposureReport;
+}
+
+/**
+ * Output multiplier from shade for one month.
+ *
+ * A panel in half shade makes half the power; a bed in half shade does not make
+ * half the food, because a plant answers less light with slower growth rather
+ * than by switching off. `sunSensitivity` is how much of that gap each system
+ * actually feels.
+ */
+function shadeFactor(def: SystemDef, exposure: ExposureReport, month: number): number {
+  const sensitivity = def.sunSensitivity ?? 0;
+  if (sensitivity <= 0) return 1;
+  return 1 - sensitivity * (1 - exposure.monthly[month]);
 }
 
 function runScenario(
@@ -249,7 +272,8 @@ function runScenario(
       for (const f of s.def.flows) {
         const amt = rateAmount(f.rate, month, s.placement.units, drivers, seasons);
         if (f.direction === 'produce') {
-          produce[f.resource] = (produce[f.resource] ?? 0) + amt * s.confidence;
+          produce[f.resource] =
+            (produce[f.resource] ?? 0) + amt * s.confidence * shadeFactor(s.def, s.exposure, month);
         } else if (f.optional) {
           optional[f.resource] = (optional[f.resource] ?? 0) + amt;
         } else {
@@ -386,6 +410,10 @@ function runScenario(
       footprintM2: s.def.footprintPerUnit * s.placement.units,
       roofM2: (s.def.roofFootprintPerUnit ?? 0) * s.placement.units,
       evidence: s.def.evidence,
+      sunExposure: s.exposure.annual,
+      ...(s.exposure.worstCaster
+        ? { shadedBy: { label: s.exposure.worstCaster.label, lost: s.exposure.worstCaster.lost } }
+        : {}),
     };
   });
 
@@ -400,6 +428,8 @@ export function simulate(
   const seasons = buildSeasonProfiles(design.site, drivers);
 
   const active = design.placements.filter((p) => p.enabled);
+  const exposure = sunExposure(design);
+  const OPEN: ExposureReport = { monthly: new Array(12).fill(1), annual: 1 };
   const build = (scenario: Scenario): ActiveSystem[] =>
     active.flatMap((placement) => {
       const base = catalogById[placement.systemId]
@@ -408,7 +438,7 @@ export function simulate(
       const def = effectiveSystem(base, design.overrides[placement.systemId]);
       const band = EVIDENCE[def.evidence];
       const confidence = scenario === 'low' ? band.low : scenario === 'high' ? band.high : 1;
-      return [{ placement, def, confidence }];
+      return [{ placement, def, confidence, exposure: exposure[placement.id] ?? OPEN }];
     });
 
   const expected = runScenario(design, build('expected'), drivers, seasons, 'expected');
@@ -499,6 +529,19 @@ function buildWarnings(
   }
 
   for (const p of expected.placements) {
+    // Shade is reported separately from starvation: one is a siting problem you
+    // fix with a saw or a different corner, the other is a missing input.
+    const sensitivity = catalogSensitivity(design, p.systemId);
+    if (sensitivity > 0.3 && p.sunExposure < 0.8) {
+      w.push({
+        level: p.sunExposure < 0.55 ? 'warn' : 'info',
+        placementId: p.placementId,
+        title: `${p.name} is in the shade`,
+        detail: p.shadedBy
+          ? `It sees ${Math.round(p.sunExposure * 100)}% of the available sun across the year, and ${p.shadedBy.label} takes the largest share. Move it, lower the obstruction, or accept the lower yield.`
+          : `It sees ${Math.round(p.sunExposure * 100)}% of the available sun across the year.`,
+      });
+    }
     if (p.runRate < 0.9 && p.limitedBy.length) {
       const r = p.limitedBy[0];
       w.push({
@@ -507,6 +550,59 @@ function buildWarnings(
         resource: r,
         title: `${p.name} is starved of ${RESOURCES[r].label.toLowerCase()}`,
         detail: `It can only run at about ${Math.round(p.runRate * 100)}% of capacity because there is not enough ${RESOURCES[r].label.toLowerCase()} to go round.`,
+      });
+    }
+  }
+
+  // Ground you have marked as behaving differently. These are siting warnings,
+  // not physics: the model does not silently dock yield for them, it tells you
+  // and leaves the call to you.
+  const ZONE_RULES: Record<string, { systems: RegExp; level: Warning['level']; why: string }> = {
+    wet: {
+      systems: /bed|potato|squash|root-cellar|compost|hugelkultur|coppice/,
+      level: 'warn',
+      why: 'roots and stored crops rot in ground that stays saturated; raise the bed or drain it first',
+    },
+    dry: {
+      systems: /bed|potato|squash|polytunnel|greenhouse|berry|fruit/,
+      level: 'warn',
+      why: 'this ground dries out fastest, so it will carry the highest irrigation demand on the site',
+    },
+    rocky: {
+      systems: /bed|potato|swale|cistern|septic|well|cellar|pond/,
+      level: 'warn',
+      why: 'digging here is the expensive part, and swales and trenches may not cut at all',
+    },
+    frostPocket: {
+      systems: /fruit|berry|beehive|food-forest/,
+      level: 'warn',
+      why: 'cold air pools here, and a frost at blossom takes the whole year of fruit',
+    },
+    offLimits: {
+      systems: /./,
+      level: 'error',
+      why: 'this ground is spoken for — septic field, easement, setback or access',
+    },
+  };
+
+  for (const p of expected.placements) {
+    const placement = design.placements.find((q) => q.id === p.placementId);
+    if (!placement) continue;
+    const def = CATALOG_BY_ID[placement.systemId]
+      ?? design.customSystems.find((c) => c.id === placement.systemId);
+    if (!def) continue;
+    const fp = planFootprint(def, placement);
+    for (const zone of design.zones) {
+      if (!rectsOverlap(placement.x, placement.y, fp.w, fp.h, zone.x, zone.y, zone.w, zone.d)) {
+        continue;
+      }
+      const rule = ZONE_RULES[zone.kind];
+      if (!rule || !rule.systems.test(placement.systemId)) continue;
+      w.push({
+        level: rule.level,
+        placementId: p.placementId,
+        title: `${p.name} sits on ${zone.label || describeZone(zone.kind)}`,
+        detail: `${rule.why.charAt(0).toUpperCase()}${rule.why.slice(1)}.`,
       });
     }
   }
@@ -523,6 +619,26 @@ function buildWarnings(
   }
 
   return w;
+}
+
+function rectsOverlap(
+  ax: number, ay: number, aw: number, ah: number,
+  bx: number, by: number, bw: number, bh: number,
+): boolean {
+  return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+}
+
+function describeZone(kind: string): string {
+  return {
+    wet: 'wet ground', dry: 'dry ground', rocky: 'rocky ground',
+    frostPocket: 'a frost pocket', offLimits: 'ground that is off limits',
+  }[kind] ?? 'marked ground';
+}
+
+function catalogSensitivity(design: Design, systemId: string): number {
+  const def = design.customSystems.find((s) => s.id === systemId);
+  if (def) return def.sunSensitivity ?? 0;
+  return CATALOG_BY_ID[systemId]?.sunSensitivity ?? 0;
 }
 
 function format(n: number): string {

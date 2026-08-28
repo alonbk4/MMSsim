@@ -89,6 +89,7 @@ export type DriverId =
   | 'peakSunHours'
   | 'growingShare'
   | 'irrigationDemandPerM2'
+  | 'runoffMm'
   | 'heatingDegreeDays';
 
 export type Rate =
@@ -141,10 +142,66 @@ export interface SystemDef {
   upkeepCostPerUnitPerMonth: number;
   flows: Flow[];
   storage?: StorageSpec;
+  /**
+   * How much this system's output depends on direct sun, 0 to 1. Panels are 1:
+   * shade them and they stop. Vegetables are lower, because plants trade shade
+   * for slower growth rather than switching off. Omitted means unaffected — a
+   * water tank does not care.
+   */
+  sunSensitivity?: number;
   /** Why it is in the tier it is in, and what would move it up a tier. */
   notes: string;
   /** Free-text provenance. For `proven` systems this is your own record. */
   sources: string[];
+}
+
+/**
+ * Something already on the site that the design has to live with.
+ *
+ * Covers both the things that block sun — the neighbour's house, a boundary
+ * fence, a mature oak — and the things that merely occupy ground, like a patio.
+ * They produce nothing. They are a constraint, not a system.
+ */
+export type FeatureKind =
+  | 'building'
+  | 'fence'
+  | 'hedge'
+  | 'tree'
+  | 'wall'
+  | 'paving';
+
+/** How much light a feature stops. Bare winter branches stop far less. */
+export type Foliage = 'solid' | 'evergreen' | 'deciduous';
+
+export interface SiteFeature {
+  id: string;
+  kind: FeatureKind;
+  label?: string;
+  /** Top-left of the footprint, metres. A tree is a circle in this box. */
+  x: number;
+  y: number;
+  w: number;
+  d: number;
+  heightM: number;
+  foliage: Foliage;
+  /**
+   * Whether it eats into the yard's usable area. A neighbour's building over
+   * the boundary shades you without costing you ground.
+   */
+  occupiesGround: boolean;
+}
+
+/** Ground that behaves differently, and that the design should respect. */
+export type ZoneKind = 'wet' | 'dry' | 'rocky' | 'frostPocket' | 'offLimits';
+
+export interface SiteZone {
+  id: string;
+  kind: ZoneKind;
+  label?: string;
+  x: number;
+  y: number;
+  w: number;
+  d: number;
 }
 
 /** A system dropped onto the yard. */
@@ -210,12 +267,22 @@ export interface SiteProfile {
   greywaterFraction: number;
   /** Soil infiltration, affects earthworks. */
   soil: 'sand' | 'loam' | 'clay';
+  /** Fall of the ground, percent (rise over run × 100). Zero is flat. */
+  slopePercent: number;
+  /** Compass direction the ground falls towards, degrees clockwise from north. */
+  slopeAspect: number;
+  /** Height of the house, metres — it is the biggest shadow on most plots. */
+  houseHeightM: number;
 }
 
 export interface Design {
   version: number;
   site: SiteProfile;
   placements: Placement[];
+  /** What is already there: shade, structures, things you are keeping. */
+  features: SiteFeature[];
+  /** Ground that behaves differently. */
+  zones: SiteZone[];
   /** Per-system overrides keyed by system id — this is how a system moves
    *  from `researched` to `proven` with your own measured numbers. */
   overrides: Record<string, SystemOverride>;

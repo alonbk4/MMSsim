@@ -107,6 +107,35 @@ export function shiftHemisphere(series: number[]): number[] {
 export type DriverSeries = Record<DriverId, number[]>;
 
 /**
+ * The latitude the *sun* effectively sees, once the ground is tilted.
+ *
+ * A slope leaning toward the equator gathers light as though it were that many
+ * degrees closer to it; one leaning away loses the same. This is the standard
+ * rule of thumb rather than a full tilted-plane calculation — good to a few
+ * percent at yard scale, and it keeps a single number driving the whole model.
+ */
+export function solarLatitude(site: SiteProfile): number {
+  const slopeDeg = Math.atan(site.slopePercent / 100) * (180 / Math.PI);
+  const towardEquator = site.latitude >= 0 ? 180 : 0;
+  const alignment = Math.cos((site.slopeAspect - towardEquator) * (Math.PI / 180));
+  // The shift is always *towards* the equator when the slope faces it, which
+  // means subtracting in the north and adding in the south — the effective
+  // latitude has to move toward zero either way, not just get smaller.
+  const hemisphere = site.latitude >= 0 ? 1 : -1;
+  return Math.max(-80, Math.min(80, site.latitude - hemisphere * slopeDeg * alignment));
+}
+
+/**
+ * The share of rain that runs off rather than soaking in. Clay sheds, sand
+ * drinks, and every degree of slope moves water sideways before it can do
+ * either. This is what swales are built to intercept.
+ */
+export function runoffFraction(site: SiteProfile): number {
+  const bySoil = { sand: 0.12, loam: 0.24, clay: 0.4 }[site.soil];
+  return Math.min(0.85, bySoil + Math.min(0.35, site.slopePercent * 0.012));
+}
+
+/**
  * Turn a site profile into the monthly climate series the flow model reads.
  *
  * The two derived ones worth explaining:
@@ -137,9 +166,12 @@ export function buildDrivers(site: SiteProfile): DriverSeries {
     growthTotal > 0 ? growthWeight.map((w) => w / growthTotal) : DAYS_IN_MONTH.map(() => 1 / 12);
 
   const CROP_FACTOR = 0.85;
+  const runoff = runoffFraction(site);
+  const runoffMm = rainfallMm.map((r) => r * runoff);
   const irrigationDemandPerM2 = site.etoMm.map((eto, i) => {
-    // Only part of rainfall is usefully retained by a bed; the rest runs off.
-    const effectiveRain = rainfallMm[i] * 0.75;
+    // Rain that runs off never reaches the roots, so a steep clay site needs
+    // more irrigation than a flat sandy one under identical weather.
+    const effectiveRain = rainfallMm[i] - runoffMm[i];
     return Math.max(0, eto * CROP_FACTOR - effectiveRain);
   });
 
@@ -153,6 +185,7 @@ export function buildDrivers(site: SiteProfile): DriverSeries {
     peakSunHours: site.peakSunHours.map((h, i) => h * DAYS_IN_MONTH[i]),
     growingShare,
     irrigationDemandPerM2,
+    runoffMm,
     heatingDegreeDays,
   };
 }
@@ -187,6 +220,26 @@ export function siteFromPreset(preset: ClimatePreset, base: SiteProfile): SitePr
  * Crossing the equator flips the seasonal series, since a January in Chile is
  * not a January in Spain.
  */
+/** Recompute the sun series for whatever latitude and slope the site now has. */
+export function recomputeSun(site: SiteProfile): SiteProfile {
+  const preset = CLIMATE_PRESETS.find((p) => p.id === site.climate);
+  const clearness = preset
+    ? clearnessIndex(preset.peakSunHours, preset.refLatitude)
+    : clearnessIndex(site.peakSunHours, site.latitude || 45);
+  return { ...site, peakSunHours: peakSunHoursAt(solarLatitude(site), clearness) };
+}
+
+/** Set the slope and re-derive everything that leans on it. */
+export function applySlope(
+  site: SiteProfile, slopePercent: number, slopeAspect: number,
+): SiteProfile {
+  return recomputeSun({
+    ...site,
+    slopePercent: Math.max(0, Math.min(45, slopePercent)),
+    slopeAspect: ((slopeAspect % 360) + 360) % 360,
+  });
+}
+
 export function applyLatitude(site: SiteProfile, latitude: number): SiteProfile {
   const lat = Math.max(-66, Math.min(66, latitude));
   const preset = CLIMATE_PRESETS.find((p) => p.id === site.climate);
@@ -197,14 +250,14 @@ export function applyLatitude(site: SiteProfile, latitude: number): SiteProfile 
   const crossedEquator = Math.sign(lat || 1) !== Math.sign(site.latitude || 1);
   const flip = (xs: number[]) => (crossedEquator ? shiftHemisphere(xs) : xs);
 
-  return {
+  return recomputeSun({
     ...site,
     latitude: lat,
     peakSunHours: peakSunHoursAt(lat, clearness),
     rainfallShape: flip(site.rainfallShape),
     meanTempC: flip(site.meanTempC),
     etoMm: flip(site.etoMm),
-  };
+  });
 }
 
 const BASE_SITE: SiteProfile = {
@@ -228,6 +281,9 @@ const BASE_SITE: SiteProfile = {
   proteinPerPersonKgPerMonth: 1.6,
   greywaterFraction: 0.55,
   soil: 'loam',
+  slopePercent: 4,
+  slopeAspect: 180,
+  houseHeightM: 6,
 };
 
 /**

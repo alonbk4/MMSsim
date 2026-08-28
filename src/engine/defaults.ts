@@ -1,7 +1,7 @@
 import { DEFAULT_SITE } from './climate';
 import type { Design, Placement } from './types';
 
-export const DESIGN_VERSION = 1;
+export const DESIGN_VERSION = 2;
 
 let seq = 0;
 export function newId(prefix = 'p'): string {
@@ -31,6 +31,16 @@ export function createDefaultDesign(): Design {
       makePlacement('laying-hens', 6, 13, 11),
       makePlacement('compost-bays', 3, 13, 15),
     ],
+    features: [
+      // A neighbour's wall on the shady side, so the shade model has something
+      // to say from the first run rather than looking like decoration.
+      {
+        id: 'f_boundary', kind: 'fence', label: 'Boundary fence',
+        x: 0, y: 27.5, w: 20, d: 0.3, heightM: 1.8,
+        foliage: 'solid', occupiesGround: false,
+      },
+    ],
+    zones: [],
     overrides: {},
     customSystems: [],
   };
@@ -41,6 +51,8 @@ export function emptyDesign(): Design {
     version: DESIGN_VERSION,
     site: { ...DEFAULT_SITE },
     placements: [],
+    features: [],
+    zones: [],
     overrides: {},
     customSystems: [],
   };

@@ -95,10 +95,10 @@ export const CATALOG: SystemDef[] = [
     capitalPerUnit: 1.5,
     upkeepCostPerUnitPerMonth: 0,
     flows: [
-      out('waterIrrigation', driven('rainfallMm', 0.25)),
+      out('waterIrrigation', driven('runoffMm', 0.7)),
       need('labor', flat(0.002)),
     ],
-    notes: 'Credited at 25% of incident rain — the share that would otherwise leave as runoff and instead becomes plant-available soil moisture. On sand the gain is smaller and on heavy clay a badly cut swale can waterlog; both are why this is not `proven` until you have dug one here.',
+    notes: 'Credited with 70% of the water that would otherwise run off the catchment above it. How much that is depends on your soil and your slope, both set on the Site tab — which is why the same swale is worth far more on steep clay than on flat sand. A badly cut one on heavy clay waterlogs instead; that is why this is not `proven` until you have dug one here.',
     sources: ['Lancaster, Rainwater Harvesting for Drylands', 'Yeomans, Water for Every Farm'],
   },
   {
@@ -133,6 +133,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['openGround', 'lowPoint', 'fullSun'],
     capitalPerUnit: 110,
     upkeepCostPerUnitPerMonth: 0.2,
+    sunSensitivity: 0.35,
     flows: [
       need('greywater', flat(1200)),
       out('waterIrrigation', flat(1080)),
@@ -294,6 +295,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['roof', 'fullSun'],
     capitalPerUnit: 1150,
     upkeepCostPerUnitPerMonth: 0.6,
+    sunSensitivity: 1,
     flows: [
       out('electricity', driven('peakSunHours', 0.78)),
       need('labor', flat(0.06)),
@@ -331,6 +333,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['roof', 'fullSun'],
     capitalPerUnit: 480,
     upkeepCostPerUnitPerMonth: 0.5,
+    sunSensitivity: 1,
     flows: [
       out('heat', driven('peakSunHours', 0.45)),
       need('electricity', flat(2)),
@@ -371,6 +374,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['openGround', 'partShade'],
     capitalPerUnit: 1.8,
     upkeepCostPerUnitPerMonth: 0,
+    sunSensitivity: 0.4,
     flows: [
       out('biomass', yearly(0.8, 'winter')),
       need('waterIrrigation', driven('irrigationDemandPerM2', 0.15)),
@@ -391,6 +395,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['fullSun'],
     capitalPerUnit: 70,
     upkeepCostPerUnitPerMonth: 0.1,
+    sunSensitivity: 1,
     flows: [
       out('heat', driven('peakSunHours', 0.2)),
       need('labor', flat(0.6)),
@@ -410,6 +415,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['openGround', 'fullSun'],
     capitalPerUnit: 620,
     upkeepCostPerUnitPerMonth: 1,
+    sunSensitivity: 0.3,
     flows: [
       need('organicWaste', flat(45)),
       need('blackwater', flat(150), true),
@@ -492,6 +498,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['fullSun', 'openGround'],
     capitalPerUnit: 18,
     upkeepCostPerUnitPerMonth: 0.06,
+    sunSensitivity: 0.75,
     flows: [
       out('foodCalories', yearly(950, 'growing')),
       out('foodProtein', yearly(0.055, 'growing')),
@@ -514,6 +521,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['fullSun', 'openGround'],
     capitalPerUnit: 8,
     upkeepCostPerUnitPerMonth: 0.04,
+    sunSensitivity: 0.75,
     flows: [
       out('foodCalories', yearly(3100, 'growing')),
       out('foodProtein', yearly(0.09, 'growing')),
@@ -536,6 +544,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['fullSun', 'openGround'],
     capitalPerUnit: 5,
     upkeepCostPerUnitPerMonth: 0.02,
+    sunSensitivity: 0.7,
     flows: [
       out('foodCalories', yearly(1350, 'growing')),
       out('foodProtein', yearly(0.045, 'growing')),
@@ -558,6 +567,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['fullSun', 'openGround'],
     capitalPerUnit: 14,
     upkeepCostPerUnitPerMonth: 0.05,
+    sunSensitivity: 0.8,
     flows: [
       out('foodCalories', yearly(2400, 'growing')),
       out('foodProtein', yearly(0.11, 'growing')),
@@ -581,6 +591,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['fullSun', 'openGround'],
     capitalPerUnit: 6,
     upkeepCostPerUnitPerMonth: 0.02,
+    sunSensitivity: 0.6,
     flows: [
       out('foodCalories', yearly(850, 'growing')),
       out('foodProtein', yearly(0.05, 'growing')),
@@ -604,6 +615,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['fullSun', 'openGround'],
     capitalPerUnit: 65,
     upkeepCostPerUnitPerMonth: 0.15,
+    sunSensitivity: 0.8,
     flows: [
       out('foodCalories', yearly(2100, 'flat')),
       out('foodProtein', yearly(0.12, 'flat')),
@@ -626,6 +638,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['fullSun', 'partShade', 'openGround'],
     capitalPerUnit: 9,
     upkeepCostPerUnitPerMonth: 0.01,
+    sunSensitivity: 0.5,
     flows: [
       out('foodCalories', yearly(600, 'growing')),
       out('foodProtein', yearly(0.03, 'growing')),
@@ -648,6 +661,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['fullSun', 'openGround'],
     capitalPerUnit: 45,
     upkeepCostPerUnitPerMonth: 0.2,
+    sunSensitivity: 0.55,
     flows: [
       out('foodCalories', yearly(20000, 'growing')),
       out('foodProtein', yearly(0.25, 'growing')),
@@ -670,6 +684,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['fullSun', 'partShade', 'openGround'],
     capitalPerUnit: 14,
     upkeepCostPerUnitPerMonth: 0.05,
+    sunSensitivity: 0.45,
     flows: [
       out('foodCalories', yearly(1600, 'growing')),
       out('foodProtein', yearly(0.04, 'growing')),
@@ -761,6 +776,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['fullSun', 'openGround'],
     capitalPerUnit: 420,
     upkeepCostPerUnitPerMonth: 3,
+    sunSensitivity: 0.3,
     flows: [
       out('foodCalories', yearly(60000, 'summer')),
       need('labor', yearly(22, 'growing')),
@@ -802,6 +818,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['fullSun', 'indoor'],
     capitalPerUnit: 320,
     upkeepCostPerUnitPerMonth: 2.5,
+    sunSensitivity: 0.6,
     flows: [
       out('foodCalories', yearly(3600, 'growing')),
       out('foodProtein', yearly(0.9, 'growing')),
@@ -884,6 +901,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['fullSun', 'lowPoint'],
     capitalPerUnit: 25,
     upkeepCostPerUnitPerMonth: 0.1,
+    sunSensitivity: 0.6,
     flows: [
       out('animalFeed', yearly(9, 'growing')),
       need('waterIrrigation', flat(40)),
@@ -1035,6 +1053,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['partShade', 'fullSun', 'openGround'],
     capitalPerUnit: 4,
     upkeepCostPerUnitPerMonth: 0,
+    sunSensitivity: 0.45,
     flows: [
       out('biomass', yearly(3.2, 'growing')),
       out('compost', yearly(1.8, 'growing')),
@@ -1056,6 +1075,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['openGround', 'fullSun'],
     capitalPerUnit: 0.6,
     upkeepCostPerUnitPerMonth: 0.01,
+    sunSensitivity: 0.55,
     flows: [
       out('compost', yearly(2.2, 'growing')),
       out('biomass', yearly(0.9, 'growing')),
@@ -1119,6 +1139,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['nearHouse', 'fullSun'],
     capitalPerUnit: 420,
     upkeepCostPerUnitPerMonth: 0.4,
+    sunSensitivity: 0.8,
     flows: [
       out('foodCalories', yearly(2600, 'flat')),
       out('foodProtein', yearly(0.14, 'flat')),
@@ -1142,6 +1163,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['nearHouse', 'fullSun'],
     capitalPerUnit: 260,
     upkeepCostPerUnitPerMonth: 0.05,
+    sunSensitivity: 1,
     flows: [
       out('heat', driven('peakSunHours', 0.3)),
       need('labor', flat(0.05)),
@@ -1161,6 +1183,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['nearHouse', 'fullSun'],
     capitalPerUnit: 55,
     upkeepCostPerUnitPerMonth: 0.05,
+    sunSensitivity: 0.5,
     flows: [
       out('foodCalories', yearly(900, 'growing')),
       out('biomass', yearly(0.8, 'winter')),
@@ -1182,6 +1205,7 @@ export const CATALOG: SystemDef[] = [
     siting: ['lowPoint', 'fullSun', 'openGround'],
     capitalPerUnit: 55,
     upkeepCostPerUnitPerMonth: 0.1,
+    sunSensitivity: 0.25,
     flows: [
       out('waterIrrigation', driven('rainfallMm', 1)),
       need('waterIrrigation', driven('irrigationDemandPerM2', 1.15)),
