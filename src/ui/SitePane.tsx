@@ -1,4 +1,7 @@
-import { applyLatitude, buildDrivers, CLIMATE_PRESETS, getPreset, siteFromPreset } from '../engine/climate';
+import {
+  applyLatitude, applySlope, buildDrivers, CLIMATE_PRESETS, getPreset,
+  runoffFraction, siteFromPreset, solarLatitude,
+} from '../engine/climate';
 import { sunSummary } from '../engine/solar';
 import type { SiteProfile } from '../engine/types';
 import { useApp } from '../state/store';
@@ -79,6 +82,11 @@ export function SitePane() {
               suffix="m²" onChange={(v) => num({ roofAreaM2: v })}
               hint="Catchment and panels compete for this"
             />
+            <Slider
+              label="House height" value={site.houseHeightM} min={0} max={20} step={0.5}
+              suffix="m" onChange={(v) => num({ houseHeightM: v })}
+              hint="It is the biggest shadow on most plots"
+            />
             <Field label="Soil">
               <select value={site.soil} onChange={(e) => num({ soil: e.target.value as SiteProfile['soil'] })}>
                 <option value="sand">Sand — drains fast, holds little</option>
@@ -92,6 +100,14 @@ export function SitePane() {
               hint={`${compact(site.annualRainfallMm * site.roofAreaM2 * 0.85)} L/yr off the whole roof`}
             />
           </div>
+        </div>
+
+        <div className="card">
+          <header>
+            <h2>Which way the ground falls</h2>
+            <span className="sub">slope changes sun and water</span>
+          </header>
+          <SlopeControl />
         </div>
 
         <div className="card">
@@ -132,6 +148,66 @@ export function SitePane() {
           cheapest instrument in this whole app.
         </p>
       </div>
+    </div>
+  );
+}
+
+function SlopeControl() {
+  const site = useApp((s) => s.design.site);
+  const setSite = useApp((s) => s.setSite);
+  const effective = solarLatitude(site);
+  const runoff = runoffFraction(site);
+  const compass = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][
+    Math.round(site.slopeAspect / 45) % 8
+  ];
+  const shift = effective - site.latitude;
+
+  return (
+    <div className="stack">
+      <Field label="Steepness" value={`${site.slopePercent}%`}>
+        <input
+          type="range" min={0} max={45} step={1} value={site.slopePercent}
+          onChange={(e) => setSite(applySlope(site, Number(e.target.value), site.slopeAspect))}
+        />
+        <span className="meta-line">
+          {site.slopePercent === 0
+            ? 'Flat.'
+            : `Falls ${site.slopePercent} m over every 100 m — about ${Math.round(Math.atan(site.slopePercent / 100) * 180 / Math.PI)}°.`}
+        </span>
+      </Field>
+
+      <Field label="Falls towards" value={`${compass} · ${Math.round(site.slopeAspect)}°`}>
+        <input
+          type="range" min={0} max={355} step={5} value={site.slopeAspect}
+          onChange={(e) => setSite(applySlope(site, site.slopePercent, Number(e.target.value)))}
+        />
+        <span className="meta-line">Downhill direction, clockwise from north.</span>
+      </Field>
+
+      <div className="tiles">
+        <div className="tile">
+          <div className="label">Sun behaves like</div>
+          <div className="figure">{Math.abs(effective).toFixed(1)}°</div>
+          <div className="range">
+            {Math.abs(shift) < 0.1
+              ? 'same as flat ground'
+              : `${Math.abs(shift).toFixed(1)}° ${shift * (site.latitude >= 0 ? 1 : -1) < 0 ? 'nearer' : 'further from'} the equator`}
+          </div>
+        </div>
+        <div className="tile">
+          <div className="label">Rain that runs off</div>
+          <div className="figure">{Math.round(runoff * 100)}%</div>
+          <div className="range">the rest soaks in where it lands</div>
+        </div>
+      </div>
+
+      <p className="card-note" style={{ marginBottom: 0 }}>
+        A slope leaning towards the equator gathers light as though it were that
+        much closer to it, and one leaning away loses the same. Steepness also
+        decides how much rain leaves before it can soak in, which raises
+        irrigation demand and is exactly what a swale is built to catch — so the
+        same swale is worth far more here on steep clay than on flat sand.
+      </p>
     </div>
   );
 }

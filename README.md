@@ -113,6 +113,42 @@ fraction of capacity and say so; the beds that were counting on their manure
 feel it. Inputs marked optional (a compost bay would *like* woody material)
 compete for surplus but never register as a household shortfall.
 
+**Your site is in the way.** A climate preset knows how much sun falls on a
+region; it has no idea about your neighbour's conifers. Draw the obstructions
+that are already there — buildings, fences, hedges, trees, the wall over the
+boundary — give each a height and a foliage type, and the model casts real
+shadows: an obstruction of height H with the sun at altitude a throws a shadow
+`H / tan(a)` directly away from the sun's azimuth. Every plot is sampled at
+five points, every month at up to thirteen times of day, and each moment is
+weighted by the sine of the sun's altitude, so an hour lost at noon costs far
+more than an hour lost at dawn.
+
+The result is a per-plot, per-month sun exposure figure that scales output by
+how much each system actually cares — panels almost linearly, vegetables less,
+a water tank not at all. So the app can tell you *"this bed sees 55% of the
+available sun and the neighbour's conifer takes the largest share"*, which is
+the sort of thing no preset can ever work out for you. A scrubber above the
+canvas parks the sun at any month and hour and sweeps the shadows across the
+plan; December mid-afternoon is where most yards keep their secrets.
+
+Two details worth knowing. Shading carries an observer height, so a house never
+shades the panels bolted to its own roof and a boundary fence never shades a
+roof at all. And a bare deciduous tree stops roughly a third of the light a
+leafy one does, so the same oak is priced differently in February and July.
+Tall perennials you plant are obstructions too — a mature fruit tree does not
+care that you filed it under food — though nothing ever shades itself.
+
+**Slope changes both halves.** Ground leaning towards the equator behaves like
+a lower latitude and picks up winter sun; leaning away, the reverse. Steepness
+also sets how much rain runs off before it can soak in, which raises irrigation
+demand on steep clay and is exactly what a swale is built to intercept — so the
+same swale is worth far more there than on flat sand.
+
+**Marked ground stays advisory.** Tag areas as wet, dry, rocky, a frost pocket,
+or off limits, and the model names the conflict when you put something
+unsuitable on them. It does not silently dock the yield: it tells you, and
+leaves the call to you.
+
 **Storage is real.** Tanks, ponds, batteries and root cellars carry surplus
 forward up to their capacity and are drawn down when production falls short —
 which is what turns "my roof catches plenty of rain annually" into "and I still

@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { CATALOG } from '../engine/catalog';
 import { EVIDENCE, EVIDENCE_ORDER, RESOURCES } from '../engine/resources';
 import type { EvidenceTier, SystemCategory } from '../engine/types';
-import { systemById, useApp, useSimulation } from '../state/store';
+import { FEATURE_DEFAULTS, systemById, useApp, useSimulation } from '../state/store';
+import type { FeatureKind, ZoneKind } from '../engine/types';
+import { FEATURE_LABEL, ZONE_BLURB, ZONE_LABEL } from './plan/site';
 import {
   CATEGORY_ICON, CATEGORY_LABEL, compact, EvidenceBadge, Field, Icon, money, pct,
 } from './common';
@@ -12,13 +14,16 @@ const CATEGORIES: SystemCategory[] = ['water', 'food', 'energy', 'sanitation', '
 
 export function DesignPane() {
   const selected = useApp((s) => s.selectedPlacementId);
+  const selectedFeature = useApp((s) => s.selectedFeatureId);
+  const selectedZone = useApp((s) => s.selectedZoneId);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const anySelected = selected || selectedFeature || selectedZone;
 
   return (
     <div className="pane no-scroll" style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
       <YardCanvas />
 
-      {!selected && !paletteOpen && (
+      {!anySelected && !paletteOpen && (
         <button
           className="btn primary"
           style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', bottom: 16, display: 'flex', alignItems: 'center', gap: 6, boxShadow: 'var(--shadow)' }}
@@ -30,15 +35,22 @@ export function DesignPane() {
 
       {paletteOpen && <PaletteSheet onClose={() => setPaletteOpen(false)} />}
       {selected && <Inspector />}
+      {selectedFeature && <FeatureInspector />}
+      {selectedZone && <ZoneInspector />}
     </div>
   );
 }
 
 /* ------------------------------ palette ------------------------------ */
 
+type PaletteTab = 'systems' | 'onSite' | 'ground';
+
 function PaletteSheet({ onClose }: { onClose: () => void }) {
   const design = useApp((s) => s.design);
   const addPlacement = useApp((s) => s.addPlacement);
+  const addFeature = useApp((s) => s.addFeature);
+  const addZone = useApp((s) => s.addZone);
+  const [tab, setTab] = useState<PaletteTab>('systems');
   const [category, setCategory] = useState<SystemCategory | 'all'>('all');
   const [tiers, setTiers] = useState<Set<EvidenceTier>>(new Set(EVIDENCE_ORDER));
 
@@ -65,11 +77,74 @@ function PaletteSheet({ onClose }: { onClose: () => void }) {
     <div className="sheet">
       <div className="grabber" />
       <header>
-        <h2>Add a system</h2>
+        <h2>Add to the yard</h2>
         <span className="grow" />
         <button className="btn small" onClick={onClose} aria-label="Close"><Icon name="close" size={14} /></button>
       </header>
       <div className="sheet-body stack">
+        <div className="row wrap">
+          <button className="chip" aria-pressed={tab === 'systems'} onClick={() => setTab('systems')}>
+            Systems
+          </button>
+          <button className="chip" aria-pressed={tab === 'onSite'} onClick={() => setTab('onSite')}>
+            Already there
+          </button>
+          <button className="chip" aria-pressed={tab === 'ground'} onClick={() => setTab('ground')}>
+            Ground
+          </button>
+        </div>
+
+        {tab === 'onSite' && (
+          <>
+            <p className="card-note">
+              Whatever is already on the site and in the way of your sun — your own
+              shed, the neighbour's wall, the tree you are keeping. They produce
+              nothing, but they cast real shadows, and the results change once
+              they are on the plan.
+            </p>
+            {(Object.keys(FEATURE_LABEL) as FeatureKind[]).map((kind) => (
+              <button
+                key={kind} className="sys-row"
+                onClick={() => { addFeature(kind); onClose(); }}
+              >
+                <span className="icon"><Icon name="shelter" size={17} /></span>
+                <span className="grow">
+                  <span className="name">{FEATURE_LABEL[kind]}</span>
+                  <span className="meta-line">
+                    {FEATURE_DEFAULTS[kind].w} × {FEATURE_DEFAULTS[kind].d} m ·{' '}
+                    {FEATURE_DEFAULTS[kind].heightM > 0
+                      ? `${FEATURE_DEFAULTS[kind].heightM} m tall`
+                      : 'no height'}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </>
+        )}
+
+        {tab === 'ground' && (
+          <>
+            <p className="card-note">
+              Mark ground that behaves differently. These raise warnings on bad
+              placements rather than silently docking your yield — the model
+              tells you and leaves the call to you.
+            </p>
+            {(Object.keys(ZONE_LABEL) as ZoneKind[]).map((kind) => (
+              <button
+                key={kind} className="sys-row"
+                onClick={() => { addZone(kind); onClose(); }}
+              >
+                <span className="icon"><Icon name="soil" size={17} /></span>
+                <span className="grow">
+                  <span className="name">{ZONE_LABEL[kind]}</span>
+                  <span className="desc">{ZONE_BLURB[kind]}</span>
+                </span>
+              </button>
+            ))}
+          </>
+        )}
+
+        {tab === 'systems' && <>
         <div className="row wrap">
           <button className="chip" aria-pressed={category === 'all'} onClick={() => setCategory('all')}>All</button>
           {CATEGORIES.map((c) => (
@@ -106,6 +181,203 @@ function PaletteSheet({ onClose }: { onClose: () => void }) {
           </button>
         ))}
         {systems.length === 0 && <p className="card-note">Nothing matches those filters.</p>}
+        </>}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------ site features ------------------------------ */
+
+function FeatureInspector() {
+  const design = useApp((s) => s.design);
+  const id = useApp((s) => s.selectedFeatureId)!;
+  const update = useApp((s) => s.updateFeature);
+  const remove = useApp((s) => s.removeFeature);
+  const selectFeature = useApp((s) => s.selectFeature);
+  const setShadows = useApp((s) => s.setShadows);
+  const sim = useSimulation();
+
+  const f = design.features.find((x) => x.id === id);
+  if (!f) return null;
+
+  // Who is standing in this thing's shadow?
+  const victims = sim.expected.placements
+    .filter((p) => p.shadedBy?.label === (f.label || f.kind))
+    .sort((a, b) => a.sunExposure - b.sunExposure);
+
+  return (
+    <div className="sheet">
+      <div className="grabber" />
+      <header>
+        <h2>{f.label || FEATURE_LABEL[f.kind]}</h2>
+        <span className="grow" />
+        <button className="btn small" onClick={() => selectFeature(null)} aria-label="Close">
+          <Icon name="close" size={14} />
+        </button>
+      </header>
+      <div className="sheet-body stack">
+        <div className="row wrap" style={{ gap: 6 }}>
+          <span className="chip">{FEATURE_LABEL[f.kind]}</span>
+          <span className="chip">Already on site</span>
+        </div>
+
+        <Field label="Name">
+          <input
+            type="text" value={f.label ?? ''} placeholder={FEATURE_LABEL[f.kind]}
+            onChange={(e) => update(id, { label: e.target.value })}
+          />
+        </Field>
+
+        <Field label="Height" value={`${trimNum(f.heightM)} m`}>
+          <input
+            type="range" min={0} max={25} step={0.25} value={f.heightM}
+            onChange={(e) => update(id, { heightM: Number(e.target.value) })}
+          />
+          <span className="meta-line">
+            Height is the whole story for shade — a shadow is this, divided by the
+            tangent of the sun's angle.
+          </span>
+        </Field>
+
+        <div className="row" style={{ gap: 10 }}>
+          <Field label="Width" value={`${trimNum(f.w)} m`}>
+            <input
+              type="range" min={0.2} max={40} step={0.2} value={f.w}
+              onChange={(e) => update(id, { w: Number(e.target.value) })}
+            />
+          </Field>
+          <Field label="Depth" value={`${trimNum(f.d)} m`}>
+            <input
+              type="range" min={0.2} max={40} step={0.2} value={f.d}
+              onChange={(e) => update(id, { d: Number(e.target.value) })}
+            />
+          </Field>
+        </div>
+
+        <Field label="What it is made of">
+          <select
+            value={f.foliage}
+            onChange={(e) => update(id, { foliage: e.target.value as typeof f.foliage })}
+          >
+            <option value="solid">Solid — stops nearly all light</option>
+            <option value="evergreen">Evergreen — dense all year</option>
+            <option value="deciduous">Deciduous — bare in winter, so far less shade</option>
+          </select>
+          <span className="meta-line">
+            {f.foliage === 'deciduous'
+              ? 'Modelled as stopping about a third as much light once the leaves are down.'
+              : f.foliage === 'evergreen'
+                ? 'Dense year-round, which is what makes conifers such expensive neighbours.'
+                : 'A wall is a wall in January.'}
+          </span>
+        </Field>
+
+        <label className="row" style={{ gap: 8, fontSize: 13 }}>
+          <input
+            type="checkbox" checked={f.occupiesGround} style={{ width: 'auto' }}
+            onChange={(e) => update(id, { occupiesGround: e.target.checked })}
+          />
+          Takes up usable yard area
+        </label>
+
+        {victims.length > 0 && (
+          <div className="card" style={{ padding: 12 }}>
+            <header><h3>What this shades</h3></header>
+            <table className="data">
+              <tbody>
+                {victims.map((v) => (
+                  <tr key={v.placementId}>
+                    <td>{v.name}</td>
+                    <td>{pct(v.sunExposure)} of full sun</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="row">
+          <button className="btn" onClick={() => setShadows({ on: true })}>
+            Show its shadow
+          </button>
+          <span className="grow" />
+          <button className="btn danger" onClick={() => remove(id)} aria-label="Remove">
+            <Icon name="trash" size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ZoneInspector() {
+  const design = useApp((s) => s.design);
+  const id = useApp((s) => s.selectedZoneId)!;
+  const update = useApp((s) => s.updateZone);
+  const remove = useApp((s) => s.removeZone);
+  const selectZone = useApp((s) => s.selectZone);
+
+  const z = design.zones.find((x) => x.id === id);
+  if (!z) return null;
+
+  return (
+    <div className="sheet">
+      <div className="grabber" />
+      <header>
+        <h2>{z.label || ZONE_LABEL[z.kind]}</h2>
+        <span className="grow" />
+        <button className="btn small" onClick={() => selectZone(null)} aria-label="Close">
+          <Icon name="close" size={14} />
+        </button>
+      </header>
+      <div className="sheet-body stack">
+        <p className="card-note">{ZONE_BLURB[z.kind]}</p>
+
+        <Field label="What this ground is">
+          <select
+            value={z.kind}
+            onChange={(e) => update(id, { kind: e.target.value as ZoneKind })}
+          >
+            {(Object.keys(ZONE_LABEL) as ZoneKind[]).map((k) => (
+              <option key={k} value={k}>{ZONE_LABEL[k]}</option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Name">
+          <input
+            type="text" value={z.label ?? ''} placeholder={ZONE_LABEL[z.kind]}
+            onChange={(e) => update(id, { label: e.target.value })}
+          />
+        </Field>
+
+        <div className="row" style={{ gap: 10 }}>
+          <Field label="Width" value={`${trimNum(z.w)} m`}>
+            <input
+              type="range" min={0.5} max={60} step={0.5} value={z.w}
+              onChange={(e) => update(id, { w: Number(e.target.value) })}
+            />
+          </Field>
+          <Field label="Depth" value={`${trimNum(z.d)} m`}>
+            <input
+              type="range" min={0.5} max={60} step={0.5} value={z.d}
+              onChange={(e) => update(id, { d: Number(e.target.value) })}
+            />
+          </Field>
+        </div>
+
+        <p className="meta-line">
+          Covers {Math.round(z.w * z.d)} m². Anything placed on it gets flagged in
+          Results; nothing is docked automatically.
+        </p>
+
+        <div className="row">
+          <span className="grow" />
+          <button className="btn danger" onClick={() => remove(id)} aria-label="Remove">
+            <Icon name="trash" size={14} />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -189,6 +461,15 @@ function Inspector() {
             <div className="label">Your time</div>
             <div className="figure">{compact(report?.laborHoursPerYear ?? 0)}<span style={{ fontSize: 14 }}> h/yr</span></div>
             <div className="range">{compact((report?.laborHoursPerYear ?? 0) / 52)} h per week</div>
+          </div>
+          <div className="tile">
+            <div className="label">Sun it gets</div>
+            <div className="figure">{pct(report?.sunExposure ?? 1)}</div>
+            <div className="range">
+              {report?.shadedBy
+                ? `mostly ${report.shadedBy.label}`
+                : (report?.sunExposure ?? 1) > 0.995 ? 'open sky' : 'lightly shaded'}
+            </div>
           </div>
           <div className="tile">
             <div className="label">{roof > 0 ? 'Roof area' : 'Ground area'}</div>

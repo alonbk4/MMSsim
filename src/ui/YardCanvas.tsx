@@ -1,19 +1,29 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CATALOG_BY_ID } from '../engine/catalog';
 import type { PlacementReport } from '../engine/simulate';
 import type { Placement } from '../engine/types';
 import { systemById, useApp, useSimulation } from '../state/store';
 import { CATEGORY_ICON, Icon } from './common';
-import { longestDay, shortestDay, sunSummary, sunTrack } from '../engine/solar';
+import { MONTHS } from '../engine/climate';
+import { collectCasters, shadowsAt } from '../engine/shade';
+import { longestDay, MID_MONTH_DAY, shortestDay, sunSummary, sunTrack } from '../engine/solar';
 import { hash, planFootprint } from '../engine/footprint';
 import { paintPlan, PlanDefs } from './plan/painters';
+import { FeatureShape, ShadowLayer, ZoneDefs, ZoneShape } from './plan/site';
 
 export function YardCanvas() {
   const design = useApp((s) => s.design);
   const view = useApp((s) => s.view);
   const setView = useApp((s) => s.setView);
   const selected = useApp((s) => s.selectedPlacementId);
+  const selectedFeature = useApp((s) => s.selectedFeatureId);
+  const selectedZone = useApp((s) => s.selectedZoneId);
   const select = useApp((s) => s.select);
+  const selectFeature = useApp((s) => s.selectFeature);
+  const selectZone = useApp((s) => s.selectZone);
+  const updateFeature = useApp((s) => s.updateFeature);
+  const updateZone = useApp((s) => s.updateZone);
+  const shadows = useApp((s) => s.shadows);
   const move = useApp((s) => s.movePlacement);
   const update = useApp((s) => s.updatePlacement);
   const setSite = useApp((s) => s.setSite);
@@ -29,6 +39,11 @@ export function YardCanvas() {
     | { kind: 'drag'; id: string; dx: number; dy: number; moved: boolean }
     | { kind: 'house'; dx: number; dy: number }
     | { kind: 'resize'; id: string; startUnits: number; startDiag: number }
+    | { kind: 'moveBox'; id: string; what: 'feature' | 'zone'; dx: number; dy: number }
+    | {
+        kind: 'resizeBox'; id: string; what: 'feature' | 'zone';
+        startW: number; startD: number; startX: number; startY: number;
+      }
     | { kind: 'pinch'; dist: number; scale: number; cx: number; cy: number; x: number; y: number }
   >({ kind: 'none' });
 
@@ -69,6 +84,35 @@ export function YardCanvas() {
     if (!touched) { setTouched(true); setView({ fitted: true }); }
   };
 
+  const onBoxDown = (
+    e: React.PointerEvent<Element>, id: string, what: 'feature' | 'zone',
+    box: { x: number; y: number },
+  ) => {
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    const pt = local(e);
+    pointers.current.set(e.pointerId, pt);
+    const w = toWorld(pt.x, pt.y);
+    gesture.current = { kind: 'moveBox', id, what, dx: w.x - box.x, dy: w.y - box.y };
+    if (what === 'feature') selectFeature(id); else selectZone(id);
+    if (!touched) { setTouched(true); setView({ fitted: true }); }
+  };
+
+  const onBoxResizeDown = (
+    e: React.PointerEvent<Element>, id: string, what: 'feature' | 'zone',
+    box: { x: number; y: number; w: number; d: number },
+  ) => {
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    const pt = local(e);
+    pointers.current.set(e.pointerId, pt);
+    gesture.current = {
+      kind: 'resizeBox', id, what,
+      startW: box.w, startD: box.d, startX: box.x, startY: box.y,
+    };
+    if (!touched) { setTouched(true); setView({ fitted: true }); }
+  };
+
   const onPointerDown = (
     e: React.PointerEvent<Element>, placementId?: string, house?: boolean,
   ) => {
@@ -104,6 +148,7 @@ export function YardCanvas() {
       select(placementId);
     } else {
       gesture.current = { kind: 'pan', startX: pt.x, startY: pt.y, originX: view.x, originY: view.y };
+      select(null);
     }
   };
 
@@ -127,6 +172,20 @@ export function YardCanvas() {
     }
     if (g.kind === 'pan') {
       setView({ x: g.originX + (pt.x - g.startX), y: g.originY + (pt.y - g.startY) });
+      return;
+    }
+    if (g.kind === 'moveBox') {
+      const w = toWorld(pt.x, pt.y);
+      const snap = (v: number) => Math.round(v * 2) / 2;
+      const patch = { x: snap(w.x - g.dx), y: snap(w.y - g.dy) };
+      if (g.what === 'feature') updateFeature(g.id, patch); else updateZone(g.id, patch);
+      return;
+    }
+    if (g.kind === 'resizeBox') {
+      const w = toWorld(pt.x, pt.y);
+      const snap = (v: number) => Math.max(0.2, Math.round(v * 4) / 4);
+      const patch = { w: snap(w.x - g.startX), d: snap(w.y - g.startY) };
+      if (g.what === 'feature') updateFeature(g.id, patch); else updateZone(g.id, patch);
       return;
     }
     if (g.kind === 'resize') {
@@ -200,6 +259,19 @@ export function YardCanvas() {
     fit();
   }, [size.w, size.h, fit, touched, view.fitted]);
 
+  // Shadows for the moment the scrubber is parked on. Only computed when the
+  // overlay is showing, since it walks every obstruction.
+  const shadowShapes = useMemo(() => {
+    if (!shadows.on) return [];
+    const day = MID_MONTH_DAY[shadows.month];
+    const track = sunTrack(site.latitude, day, 49);
+    if (track.length === 0) return [];
+    // Pick the sample closest to the chosen hour of the day.
+    const idx = Math.round(((shadows.hour - 6) / 12) * (track.length - 1));
+    const sun = track[Math.max(0, Math.min(track.length - 1, idx))];
+    return shadowsAt(collectCasters(design), sun, site.meanTempC[shadows.month] >= 9);
+  }, [shadows, design, site.latitude, site.meanTempC]);
+
   const gridStep = view.scale > 26 ? 1 : view.scale > 11 ? 5 : 10;
   const X = (m: number) => m * view.scale + view.x;
   const Y = (m: number) => m * view.scale + view.y;
@@ -247,11 +319,52 @@ export function YardCanvas() {
           w={lotW * view.scale} flip={site.latitude < 0}
         />
 
+        <ZoneDefs />
+
+        {/* Ground you have marked, under everything else. */}
+        {design.zones.map((z) => (
+          <g
+            key={z.id}
+            transform={`translate(${X(z.x).toFixed(2)},${Y(z.y).toFixed(2)}) scale(${view.scale})`}
+            onPointerDown={(e) => onBoxDown(e, z.id, 'zone', z)}
+            style={{ cursor: 'grab' }}
+          >
+            <ZoneShape zone={z} selected={selectedZone === z.id} />
+          </g>
+        ))}
+
         <House
           x={X(site.houseX)} y={Y(site.houseY)}
           areaM2={site.roofAreaM2} scale={view.scale}
           onPointerDown={(e) => { e.stopPropagation(); onPointerDown(e, undefined, true); }}
         />
+
+        {/* Cast shadows sit above the ground and below the planting, so you can
+            see what falls across what. */}
+        <g transform={`translate(${X(0).toFixed(2)},${Y(0).toFixed(2)}) scale(${view.scale})`}>
+          <ShadowLayer shapes={shadowShapes} />
+        </g>
+
+        {design.features.map((f) => (
+          <g key={f.id}>
+            <g
+              transform={`translate(${X(f.x).toFixed(2)},${Y(f.y).toFixed(2)}) scale(${view.scale})`}
+              onPointerDown={(e) => onBoxDown(e, f.id, 'feature', f)}
+              style={{ cursor: 'grab' }}
+            >
+              <rect width={f.w} height={f.d} fill="transparent" />
+              <FeatureShape feature={f} selected={selectedFeature === f.id} />
+            </g>
+            {Math.min(f.w, f.d) * view.scale > 40 && f.heightM > 0 && (
+              <text
+                x={X(f.x + f.w / 2)} y={Y(f.y + f.d / 2) + 4} textAnchor="middle"
+                className="plot-sub" pointerEvents="none"
+              >
+                {trimNum(f.heightM)} m
+              </text>
+            )}
+          </g>
+        ))}
 
         {design.placements.map((p) => {
           const def = systemById(design, p.systemId);
@@ -368,9 +481,44 @@ export function YardCanvas() {
 
         {/* Top-left is the only corner neither the inspector sheet (right on
             desktop, bottom on a phone) nor the add button ever covers. */}
+        {[
+          ...design.features.map((f) => ({ id: f.id, what: 'feature' as const, box: f, d: f.d })),
+          ...design.zones.map((z) => ({ id: z.id, what: 'zone' as const, box: z, d: z.d })),
+        ]
+          .filter((it) => it.id === selectedFeature || it.id === selectedZone)
+          .map((it) => {
+            const bx = X(it.box.x), by = Y(it.box.y);
+            const bw = it.box.w * view.scale, bh = it.d * view.scale;
+            return (
+              <g key={it.id}>
+                <rect
+                  x={bx - 4} y={by - 4} width={bw + 8} height={bh + 8} rx={8}
+                  fill="none" stroke="var(--text-primary)" strokeWidth="1.5"
+                  strokeDasharray="4 3" opacity="0.55" pointerEvents="none"
+                />
+                <g
+                  onPointerDown={(e) => onBoxResizeDown(e, it.id, it.what, { ...it.box, d: it.d })}
+                  style={{ cursor: 'nwse-resize' }}
+                >
+                  <circle cx={bx + bw} cy={by + bh} r="16" fill="transparent" />
+                  <circle
+                    cx={bx + bw} cy={by + bh} r="7"
+                    fill="var(--surface-1)" stroke="var(--accent)" strokeWidth="2"
+                  />
+                  <path
+                    d={`M${bx + bw - 2.6},${by + bh + 2.6} L${bx + bw + 2.6},${by + bh - 2.6}`}
+                    stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round"
+                  />
+                </g>
+              </g>
+            );
+          })}
+
         <SunRose x={52} y={size.h > 380 ? 168 : 120} latitude={site.latitude} />
         <ScaleBar x={14} y={size.h - 18} scale={view.scale} />
       </svg>
+
+      <ShadowScrubber />
 
       <div className="canvas-hud">
         <span className="pill">{gridStep} m grid</span>
@@ -385,6 +533,59 @@ export function YardCanvas() {
       </div>
     </div>
   );
+}
+
+/**
+ * Park the sun at a month and an hour and watch what falls where. Winter
+ * mid-afternoon is the default, because that is when a yard's shade problems
+ * are worst and least obvious from a summer walk round.
+ */
+function ShadowScrubber() {
+  const shadows = useApp((s) => s.shadows);
+  const setShadows = useApp((s) => s.setShadows);
+  const latitude = useApp((s) => s.design.site.latitude);
+  const daylight = sunSummary(latitude);
+
+  return (
+    <div className={`shadow-scrubber${shadows.on ? ' open' : ''}`}>
+      <button
+        className="chip" aria-pressed={shadows.on}
+        onClick={() => setShadows({ on: !shadows.on })}
+      >
+        {shadows.on ? 'Hide shadows' : 'Show shadows'}
+      </button>
+      {shadows.on && (
+        <>
+          <label>
+            <span>{MONTHS[shadows.month]}</span>
+            <input
+              type="range" min={0} max={11} step={1} value={shadows.month}
+              onChange={(e) => setShadows({ month: Number(e.target.value) })}
+              aria-label="Month"
+            />
+          </label>
+          <label>
+            <span>{formatHour(shadows.hour)}</span>
+            <input
+              type="range" min={6} max={18} step={0.5} value={shadows.hour}
+              onChange={(e) => setShadows({ hour: Number(e.target.value) })}
+              aria-label="Time of day"
+            />
+          </label>
+          <span className="meta-line">
+            {daylight.winterDayLength.toFixed(1)}–{daylight.summerDayLength.toFixed(1)} h of
+            daylight across the year
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
+function formatHour(h: number): string {
+  const hh = Math.floor(h);
+  const mm = h % 1 >= 0.5 ? '30' : '00';
+  return `${hh}:${mm}`;
 }
 
 function clampScale(v: number) {

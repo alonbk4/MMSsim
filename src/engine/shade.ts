@@ -189,14 +189,24 @@ function convexHull(pts: [number, number][]): [number, number][] {
   return [...build(p), ...build([...p].reverse())];
 }
 
+/**
+ * A tree's shadow is a capsule, not a rectangle: round at the canopy end and
+ * round where it lands. The arcs are cheap and it is the difference between a
+ * shadow that looks drawn and one that looks computed.
+ */
 function capsuleOutline(x1: number, y1: number, x2: number, y2: number, r: number) {
-  const dx = x2 - x1, dy = y2 - y1;
-  const len = Math.hypot(dx, dy) || 1;
-  const nx = (-dy / len) * r, ny = (dx / len) * r;
-  return [
-    [x1 + nx, y1 + ny], [x2 + nx, y2 + ny],
-    [x2 - nx, y2 - ny], [x1 - nx, y1 - ny],
-  ] as [number, number][];
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const pts: [number, number][] = [];
+  const ARC = 7;
+  for (let i = 0; i <= ARC; i++) {
+    const a = angle - Math.PI / 2 + (Math.PI * i) / ARC;
+    pts.push([x2 + Math.cos(a) * r, y2 + Math.sin(a) * r]);
+  }
+  for (let i = 0; i <= ARC; i++) {
+    const a = angle + Math.PI / 2 + (Math.PI * i) / ARC;
+    pts.push([x1 + Math.cos(a) * r, y1 + Math.sin(a) * r]);
+  }
+  return pts;
 }
 
 function pointInPolygon(px: number, py: number, poly: [number, number][]): boolean {
