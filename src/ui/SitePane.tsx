@@ -7,6 +7,7 @@ import {
   formatCoords, isPlausibleZip, locateDevice, lookupZip, plausibleClimates,
   type ResolvedLocation,
 } from '../engine/location';
+import { applyObservedClimate, parseObservedClimate } from '../engine/observed';
 import { sunSummary } from '../engine/solar';
 import type { SiteProfile } from '../engine/types';
 import { useApp } from '../state/store';
@@ -41,6 +42,14 @@ export function SitePane() {
                   if (p) setSite(siteFromPreset(p, site));
                 }}
               >
+                {/* Without this the browser shows the first preset while the
+                    site is actually running on measured weather, which reads
+                    as a climate the user never chose. */}
+                {site.climateSource === 'observed' && (
+                  <option value="custom">
+                    Measured weather{site.climateYears ? ` — ${site.climateYears[0]}–${site.climateYears[1]}` : ''}
+                  </option>
+                )}
                 {CLIMATE_PRESETS.map((p) => {
                   const likely = plausibleClimates(site.latitude).includes(p.id);
                   return (
@@ -51,7 +60,27 @@ export function SitePane() {
                 })}
               </select>
             </Field>
-            <p className="card-note">{preset.blurb}</p>
+            {site.climateSource === 'observed' ? (
+              <div className="card-note" style={{
+                border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px',
+                background: 'var(--surface-2)',
+              }}>
+                <strong style={{ color: 'var(--success-text)' }}>
+                  ● {site.climateLabel ?? 'Observed'}
+                </strong>
+                <div style={{ marginTop: 3 }}>
+                  Running on measured weather for this ground rather than an archetype
+                  {site.climateProvenance ? ` — ${site.climateProvenance}` : ''}.
+                  {' '}{Math.round(site.annualRainfallMm)} mm of rain a year.
+                </div>
+                <div className="meta-line" style={{ marginTop: 5 }}>
+                  Choosing a climate above replaces it with a generic one.
+                </div>
+              </div>
+            ) : (
+              <p className="card-note">{preset.blurb}</p>
+            )}
+            <ClimateImport />
           </div>
         </div>
 
@@ -170,6 +199,64 @@ export function SitePane() {
  * in a shed at the bottom of the garden, which is where you would actually be
  * standing when you wanted it.
  */
+/**
+ * Load a measured record in place of an archetype.
+ *
+ * The fetching happens in `tools/climate-fetch.html` rather than here: the
+ * build environment cannot reach the weather archive, so rather than ship an
+ * integration nobody has seen work, the tool does the request in a browser and
+ * this takes the twelve-number result.
+ */
+function ClimateImport() {
+  const site = useApp((s) => s.design.site);
+  const setSite = useApp((s) => s.setSite);
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const load = () => {
+    const parsed = parseObservedClimate(text);
+    if ('error' in parsed) { setError(parsed.error); return; }
+    setSite(applyObservedClimate(site, parsed));
+    setError(null);
+    setText('');
+    setOpen(false);
+  };
+
+  if (!open) {
+    return (
+      <button className="btn small" style={{ alignSelf: 'flex-start' }} onClick={() => setOpen(true)}>
+        Load measured weather
+      </button>
+    );
+  }
+
+  return (
+    <div className="stack" style={{ gap: 8 }}>
+      <p className="card-note" style={{ marginBottom: 0 }}>
+        Open <code>tools/climate-fetch.html</code> from the repository in a browser,
+        enter your coordinates, and paste what it produces here. Fifteen years of
+        reanalysis, averaged into the twelve numbers this model reads.
+      </p>
+      <textarea
+        rows={5}
+        placeholder='{ "mmssimClimate": 1, … }'
+        value={text}
+        onChange={(e) => { setText(e.target.value); setError(null); }}
+      />
+      {error && <p className="meta-line" style={{ color: 'var(--status-critical)' }}>{error}</p>}
+      <div className="row" style={{ gap: 8 }}>
+        <button className="btn small primary" onClick={load} disabled={!text.trim()}>
+          Use this weather
+        </button>
+        <button className="btn small" onClick={() => { setOpen(false); setError(null); }}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function LocationFinder({ onFound }: { onFound: (loc: ResolvedLocation) => void }) {
   const [zip, setZip] = useState('');
   const [busy, setBusy] = useState(false);

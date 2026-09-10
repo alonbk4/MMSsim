@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CATALOG_BY_ID } from './catalog';
-import { applyLatitude, buildDrivers, CLIMATE_PRESETS, DEFAULT_SITE, siteFromPreset } from './climate';
+import { applyLatitude, buildDrivers, CLIMATE_PRESETS, DAYS_IN_MONTH, DEFAULT_SITE, siteFromPreset } from './climate';
 import { createDefaultDesign, emptyDesign, makePlacement } from './defaults';
 import { RESOURCE_ORDER } from './resources';
 import { simulate } from './simulate';
@@ -43,17 +43,24 @@ describe('physical flows', () => {
   it('harvests roughly rainfall x area x runoff coefficient', () => {
     const design = designWith(makePlacement('roof-catchment', 60, 0, 0));
     const res = simulate(design, CATALOG_BY_ID);
-    // 850 mm x 60 m² x 0.85 = 43,350 L/year
-    expect(res.expected.resources.waterIrrigation.produced).toBeCloseTo(43350, 0);
+    // 1 mm on 1 m² is 1 litre, less the runoff coefficient. Derived from the
+    // site rather than hardcoded, so changing the default climate cannot
+    // quietly invalidate the check.
+    const expected = design.site.annualRainfallMm * 60 * 0.85;
+    expect(res.expected.resources.waterIrrigation.produced).toBeCloseTo(expected, 0);
   });
 
   it('generates PV in line with peak sun hours and the standard derate', () => {
     const design = designWith(makePlacement('solar-pv', 4, 0, 0));
     const res = simulate(design, CATALOG_BY_ID);
-    const kwh = res.expected.resources.electricity.produced;
-    // ~845 kWh/kWp/year for the temperate oceanic default.
-    expect(kwh / 4).toBeGreaterThan(700);
-    expect(kwh / 4).toBeLessThan(1000);
+    const perKw = res.expected.resources.electricity.produced / 4;
+    // Sun-hours per day, times days, times the PVWatts derate.
+    const expected = design.site.peakSunHours
+      .reduce((a, h, i) => a + h * DAYS_IN_MONTH[i], 0) * 0.78;
+    expect(perKw).toBeCloseTo(expected, 0);
+    // And a sanity bound: no yard array anywhere makes this much or this little.
+    expect(perKw).toBeGreaterThan(400);
+    expect(perKw).toBeLessThan(2200);
   });
 
   it('ties panel output to latitude, not just to the climate preset', () => {
@@ -73,14 +80,15 @@ describe('physical flows', () => {
   });
 
   it('scales output with the site, not just the system', () => {
-    const design = designWith(makePlacement('solar-pv', 4, 0, 0));
-    const temperate = simulate(design, CATALOG_BY_ID).expected.resources.electricity.produced;
-    const desert: Design = {
-      ...design,
-      site: siteFromPreset(CLIMATE_PRESETS[4], DEFAULT_SITE),
+    // Both sites built from presets, so this compares climates rather than
+    // whatever the default site happens to be this week.
+    const base = designWith(makePlacement('solar-pv', 4, 0, 0));
+    const at = (id: string) => {
+      const preset = CLIMATE_PRESETS.find((p) => p.id === id)!;
+      const design: Design = { ...base, site: siteFromPreset(preset, DEFAULT_SITE) };
+      return simulate(design, CATALOG_BY_ID).expected.resources.electricity.produced;
     };
-    const arid = simulate(desert, CATALOG_BY_ID).expected.resources.electricity.produced;
-    expect(arid).toBeGreaterThan(temperate * 1.5);
+    expect(at('aridDesert')).toBeGreaterThan(at('temperateOceanic') * 1.5);
   });
 });
 

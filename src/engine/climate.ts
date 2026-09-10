@@ -1,4 +1,6 @@
-import { clearnessIndex, peakSunHoursAt } from './solar';
+import { ANN_ARBOR } from './data/observed/ann-arbor';
+import { applyObservedClimate } from './observed';
+import { clearSkyMonthly, clearnessIndex, peakSunHoursAt } from './solar';
 import type { ClimatePresetId, DriverId, SiteProfile } from './types';
 
 export const MONTHS = [
@@ -196,6 +198,12 @@ export function siteFromPreset(preset: ClimatePreset, base: SiteProfile): SitePr
   const next: SiteProfile = {
     ...base,
     climate: preset.id,
+    climateSource: 'preset',
+    climateLabel: undefined,
+    climateProvenance: undefined,
+    climateYears: undefined,
+    observedPeakSunHours: undefined,
+    observedLatitude: undefined,
     annualRainfallMm: preset.annualRainfallMm,
     rainfallShape: flip(preset.rainfallShape),
     peakSunHours: [...preset.peakSunHours],
@@ -220,8 +228,28 @@ export function siteFromPreset(preset: ClimatePreset, base: SiteProfile): SitePr
  * Crossing the equator flips the seasonal series, since a January in Chile is
  * not a January in Spain.
  */
-/** Recompute the sun series for whatever latitude and slope the site now has. */
+/**
+ * Recompute the sun series for whatever latitude and slope the site now has.
+ *
+ * A site with an observed record keeps it: rather than replacing real monthly
+ * figures with a smooth clear-sky curve, the observed series is scaled by the
+ * ratio of clear-sky availability between where it was measured and where the
+ * ground now effectively sits. Leave the latitude and slope alone and the
+ * numbers come back exactly as measured.
+ */
 export function recomputeSun(site: SiteProfile): SiteProfile {
+  const effective = solarLatitude(site);
+
+  if (site.observedPeakSunHours && site.observedLatitude !== undefined) {
+    const here = clearSkyMonthly(effective);
+    const there = clearSkyMonthly(site.observedLatitude);
+    return {
+      ...site,
+      peakSunHours: site.observedPeakSunHours.map((h, i) =>
+        (there[i] > 0.01 ? Math.max(0, h * (here[i] / there[i])) : h)),
+    };
+  }
+
   const preset = CLIMATE_PRESETS.find((p) => p.id === site.climate);
   const clearness = preset
     ? clearnessIndex(preset.peakSunHours, preset.refLatitude)
@@ -253,7 +281,9 @@ export function applyLatitude(site: SiteProfile, latitude: number): SiteProfile 
   return recomputeSun({
     ...site,
     latitude: lat,
-    peakSunHours: peakSunHoursAt(lat, clearness),
+    peakSunHours: site.observedPeakSunHours
+      ? site.peakSunHours
+      : peakSunHoursAt(lat, clearness),
     rainfallShape: flip(site.rainfallShape),
     meanTempC: flip(site.meanTempC),
     etoMm: flip(site.etoMm),
@@ -263,7 +293,7 @@ export function applyLatitude(site: SiteProfile, latitude: number): SiteProfile 
 const BASE_SITE: SiteProfile = {
   name: 'My yard',
   climate: 'temperateOceanic',
-  latitude: 52,
+  latitude: 42.27,
   annualRainfallMm: 850,
   rainfallShape: [...CLIMATE_PRESETS[1].rainfallShape],
   peakSunHours: [...CLIMATE_PRESETS[1].peakSunHours],
@@ -287,8 +317,12 @@ const BASE_SITE: SiteProfile = {
 };
 
 /**
- * Derived rather than written down, so the starting site's sun figures are
- * exactly what its latitude produces. Otherwise nudging the latitude slider by
- * a degree would visibly jump the whole curve.
+ * The starting site runs on measured weather rather than an archetype: fifteen
+ * years of reanalysis for Ann Arbor, which is the ground this was built for.
+ * Pick a climate preset on the Site tab to trade it for a generic one, or load
+ * a record for your own coordinates.
  */
-export const DEFAULT_SITE: SiteProfile = applyLatitude(BASE_SITE, BASE_SITE.latitude);
+export const DEFAULT_SITE: SiteProfile = applyObservedClimate(
+  { ...BASE_SITE, slopePercent: 0, houseHeightM: 6 },
+  ANN_ARBOR,
+);

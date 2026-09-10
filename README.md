@@ -96,6 +96,29 @@ demand and heating degree days. That is why a solar array in the arid preset
 outproduces the same array in the oceanic one, and why a bed in a cold
 continental climate concentrates its whole yield into four months.
 
+**Real weather, not an archetype.** A climate preset is a shape borrowed from
+somewhere that resembles you. `tools/climate-fetch.html` is a single local page
+that pulls fifteen years of daily ERA5 reanalysis for one point and averages it
+into the twelve monthly numbers the model reads — temperature, rainfall,
+evaporative demand and sun hours. Paste the result into the Site tab and the
+site runs on measured ground, with the source and the years recorded alongside
+it, exactly the way a system carries its evidence tier.
+
+The app ships with Ann Arbor, Michigan loaded that way. It is instructive about
+what presets cost you: the cold-continental archetype it replaced was written
+for 47°N and had January four degrees too cold, October nearly three degrees
+too cold, and the year 215 mm too dry. It also missed a 159 mm evaporative
+deficit from June to August, which is the reason a Michigan garden still needs
+watering in July despite a wet-looking annual total.
+
+The fetching lives in a browser rather than in the app because this build
+environment cannot reach the weather archive — rather than ship an integration
+nobody had watched work, the tool does the request where a network exists and
+the app takes the result. Moving the latitude or tilting the ground afterwards
+*scales* the measured series rather than replacing it, so real cloud
+seasonality survives: Ann Arbor's July dips below its June, and it still does
+after you move the site to 55°N.
+
 **Finding the site.** Enter a US ZIP code or tap *Use my location* and the
 latitude is set for you. Both routes work with no network: the device's own fix,
 and a bundled table of ZIP centroids built from the `us-zips` dataset and

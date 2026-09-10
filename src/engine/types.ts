@@ -241,6 +241,18 @@ export interface SiteProfile {
   locationLabel?: string;
   locationSource?: 'manual' | 'zip' | 'device';
   locationAccuracyDeg?: number;
+  /** Where the weather figures came from: an archetype, or this actual ground. */
+  climateSource?: 'preset' | 'observed';
+  climateLabel?: string;
+  climateProvenance?: string;
+  climateYears?: [number, number];
+  /**
+   * The measured sun series and the latitude it was measured at. Kept so that
+   * moving the latitude or tilting the ground scales real cloud seasonality
+   * rather than replacing it with a smooth modelled curve.
+   */
+  observedPeakSunHours?: number[];
+  observedLatitude?: number;
   /** Total annual rainfall, mm. Scales the preset's monthly distribution. */
   annualRainfallMm: number;
   /** Monthly rainfall distribution as fractions summing to 1. */
