@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CATALOG, CATALOG_BY_ID } from '../engine/catalog';
-import { createDefaultDesign, DESIGN_VERSION, makePlacement, newId } from '../engine/defaults';
+import {
+  createDefaultDesign, DESIGN_VERSION, makePlacement, newId, normalizeDesign,
+} from '../engine/defaults';
 import { effectiveSystem, simulate, type SimResult } from '../engine/simulate';
 import { applyObservedClimate, type ObservedClimate } from '../engine/observed';
 import type {
@@ -219,18 +221,43 @@ export const useApp = create<AppState>()(
         view: { scale: 14, x: 24, y: 24, fitted: false },
       }),
       loadDesign: (design) => set({
-        design, selectedPlacementId: null, selectedFeatureId: null, selectedZoneId: null,
+        design: normalizeDesign(design),
+        selectedPlacementId: null, selectedFeatureId: null, selectedZoneId: null,
       }),
     }),
     {
       name: 'mmssim.design.v1',
+      version: DESIGN_VERSION,
       partialize: (s) => ({ design: s.design, view: s.view, tab: s.tab }),
+      /**
+       * Runs when the stored version is behind. It normalises rather than
+       * discarding, so a yard drawn six versions ago still opens.
+       */
       migrate: (persisted) => {
-        const state = persisted as { design?: Design } | undefined;
-        if (!state?.design || state.design.version !== DESIGN_VERSION) {
-          return { design: createDefaultDesign() } as never;
-        }
-        return state as never;
+        const state = persisted as { design?: unknown } | undefined;
+        return { ...state, design: normalizeDesign(state?.design) } as never;
+      },
+      /**
+       * And this runs on *every* load, version bump or not.
+       *
+       * `migrate` alone is not enough: it only fires when the stored version
+       * differs, so a save written by a build that never set one — or one
+       * corrupted by a half-finished write — sails straight through and
+       * crashes the first component that maps over a field it lacks. That is a
+       * blank page and someone's lost design, so the shape is guaranteed here
+       * instead of hoped for.
+       */
+      merge: (persisted, current) => {
+        const state = (persisted ?? {}) as Partial<AppState>;
+        return {
+          ...current,
+          ...state,
+          design: normalizeDesign(state.design),
+          view: state.view ?? current.view,
+          selectedPlacementId: null,
+          selectedFeatureId: null,
+          selectedZoneId: null,
+        };
       },
     },
   ),
