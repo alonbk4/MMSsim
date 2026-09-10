@@ -204,6 +204,26 @@ export interface SiteZone {
   d: number;
 }
 
+/**
+ * A saved climate record. Mirrors `ObservedClimate` in `observed.ts`, declared
+ * here so `Design` stays free of import cycles.
+ */
+export interface ObservedClimateRecord {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  years: [number, number];
+  source: string;
+  fetched: string;
+  elevation?: number;
+  timezone?: string;
+  meanTempC: number[];
+  rainfallMm: number[];
+  etoMm: number[];
+  peakSunHours: number[];
+}
+
 /** A system dropped onto the yard. */
 export interface Placement {
   id: string;
@@ -306,6 +326,11 @@ export interface Design {
   overrides: Record<string, SystemOverride>;
   /** User-authored systems that are not in the shipped catalog. */
   customSystems: SystemDef[];
+  /**
+   * Climate records kept for comparison — "what would this design do forty
+   * miles east". One of them is applied to the site at any time.
+   */
+  climates: ObservedClimateRecord[];
 }
 
 export interface SystemOverride {

@@ -182,6 +182,13 @@ function aggregate(data) {
   return out;
 }
 
+function gridKm(lat1, lon1, lat2, lon2) {
+  const R = 6371, rad = (d) => d * Math.PI / 180;
+  const dLat = rad(lat2 - lat1), dLon = rad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(rad(lat1))*Math.cos(rad(lat2))*Math.sin(dLon/2)**2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
 function render(agg, raw, lat, lon, y0, y1) {
   $('out').hidden = false;
   const rain = agg.months.reduce((a, b) => a + (b.rainfallMm || 0), 0);
@@ -190,6 +197,11 @@ function render(agg, raw, lat, lon, y0, y1) {
     `<p><strong>${rain.toFixed(0)} mm</strong> of rain a year · `
     + `<strong>${cold}</strong> months averaging below 5&nbsp;°C · `
     + `elevation ${agg.elevation ?? '?'} m · ${agg.timezone ?? ''}</p>`
+    + (typeof raw.latitude === 'number'
+      ? `<p>Grid cell used: ${raw.latitude.toFixed(3)}, ${raw.longitude.toFixed(3)} — `
+        + `${gridKm(lat, lon, raw.latitude, raw.longitude).toFixed(1)} km from the point you asked for. `
+        + `Any address inside that cell returns the same weather.</p>`
+      : '')
     + (agg.missing.length
       ? `<p class="err">The API did not return: ${agg.missing.join(', ')}</p>` : '');
 
@@ -205,6 +217,9 @@ function render(agg, raw, lat, lon, y0, y1) {
     source: 'Open-Meteo ERA5 archive (CC-BY-4.0)',
     fetched: new Date().toISOString().slice(0, 10),
     latitude: lat, longitude: lon, years: [y0, y1],
+    // Reanalysis is gridded: this is the cell the archive actually used, which
+    // is how far the numbers are from the point you named.
+    gridLatitude: raw.latitude, gridLongitude: raw.longitude,
     elevation: agg.elevation, timezone: agg.timezone,
     units: agg.units,
     missing: agg.missing,

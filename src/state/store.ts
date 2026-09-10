@@ -3,9 +3,10 @@ import { persist } from 'zustand/middleware';
 import { CATALOG, CATALOG_BY_ID } from '../engine/catalog';
 import { createDefaultDesign, DESIGN_VERSION, makePlacement, newId } from '../engine/defaults';
 import { effectiveSystem, simulate, type SimResult } from '../engine/simulate';
+import { applyObservedClimate, type ObservedClimate } from '../engine/observed';
 import type {
-  Design, EvidenceTier, FeatureKind, Placement, SiteFeature, SiteProfile,
-  SiteZone, SystemDef, SystemOverride, ZoneKind,
+  Design, EvidenceTier, FeatureKind, ObservedClimateRecord, Placement, SiteFeature,
+  SiteProfile, SiteZone, SystemDef, SystemOverride, ZoneKind,
 } from '../engine/types';
 
 export type Tab = 'site' | 'design' | 'results' | 'catalog';
@@ -46,6 +47,12 @@ interface AppState {
   removePlacement: (id: string) => void;
 
   setSite: (patch: Partial<SiteProfile>) => void;
+
+  /** Keep a fetched climate for later, and switch between the ones kept. */
+  saveClimate: (climate: ObservedClimate, name: string) => string;
+  useClimate: (id: string) => void;
+  renameClimate: (id: string, name: string) => void;
+  removeClimate: (id: string) => void;
   setOverride: (systemId: string, patch: SystemOverride | null) => void;
   promote: (systemId: string, tier: EvidenceTier) => void;
 
@@ -162,6 +169,38 @@ export const useApp = create<AppState>()(
       setSite: (patch) =>
         set((s) => ({ design: { ...s.design, site: { ...s.design.site, ...patch } } })),
 
+      saveClimate: (climate, name) => {
+        const id = newId('c');
+        const record: ObservedClimateRecord = { id, name, ...climate };
+        set((s) => ({
+          design: {
+            ...applyObservedClimateToDesign(s.design, record),
+            climates: [...s.design.climates, record],
+          },
+        }));
+        return id;
+      },
+
+      useClimate: (id) =>
+        set((s) => {
+          const record = s.design.climates.find((c) => c.id === id);
+          if (!record) return {};
+          return { design: applyObservedClimateToDesign(s.design, record) };
+        }),
+
+      renameClimate: (id, name) =>
+        set((s) => ({
+          design: {
+            ...s.design,
+            climates: s.design.climates.map((c) => (c.id === id ? { ...c, name } : c)),
+          },
+        })),
+
+      removeClimate: (id) =>
+        set((s) => ({
+          design: { ...s.design, climates: s.design.climates.filter((c) => c.id !== id) },
+        })),
+
       setOverride: (systemId, patch) =>
         set((s) => {
           const overrides = { ...s.design.overrides };
@@ -196,6 +235,15 @@ export const useApp = create<AppState>()(
     },
   ),
 );
+
+/** Apply a saved record to the design's site, keeping its name as the label. */
+function applyObservedClimateToDesign(design: Design, record: ObservedClimateRecord): Design {
+  const site = applyObservedClimate(design.site, record);
+  return {
+    ...design,
+    site: { ...site, name: design.site.name, climateLabel: `${record.name} · ${site.climateLabel}` },
+  };
+}
 
 /** Lay new things out on a loose grid so nothing lands exactly on top. */
 function nextFreeSpot(design: Design): { x: number; y: number } {

@@ -1,7 +1,8 @@
 import { DEFAULT_SITE } from './climate';
+import { ANN_ARBOR } from './data/observed/ann-arbor';
 import type { Design, Placement } from './types';
 
-export const DESIGN_VERSION = 2;
+export const DESIGN_VERSION = 3;
 
 let seq = 0;
 export function newId(prefix = 'p'): string {
@@ -43,6 +44,7 @@ export function createDefaultDesign(): Design {
     zones: [],
     overrides: {},
     customSystems: [],
+    climates: [{ id: 'c_ann_arbor', name: 'Ann Arbor, MI', ...ANN_ARBOR }],
   };
 }
 
@@ -55,5 +57,6 @@ export function emptyDesign(): Design {
     zones: [],
     overrides: {},
     customSystems: [],
+    climates: [],
   };
 }

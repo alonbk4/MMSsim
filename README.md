@@ -111,10 +111,19 @@ too cold, and the year 215 mm too dry. It also missed a 159 mm evaporative
 deficit from June to August, which is the reason a Michigan garden still needs
 watering in July despite a wet-looking annual total.
 
-The fetching lives in a browser rather than in the app because this build
-environment cannot reach the weather archive — rather than ship an integration
-nobody had watched work, the tool does the request where a network exists and
-the app takes the result. Moving the latitude or tilting the ground afterwards
+The app can also fetch for itself: set a location, press **Fetch weather for
+this location**, and it pulls and averages the same fifteen years. The offline
+tool remains, both as the no-network path and because it is where the response
+shape was confirmed in the first place. Records are kept in a small library, so
+a design can be compared against another town — the question "what would this
+do forty miles east" has an answer now.
+
+Reanalysis is gridded, so a record covers a cell rather than an address. Both
+routes report how far the cell sits from the point you named: every ZIP in a
+town will usually return the same weather, and what varies *inside* the town —
+frost pockets, the shade of a neighbour's conifer, a valley that holds cold air
+— is what the zones and the shade model are for. Moving the latitude or tilting
+the ground afterwards
 *scales* the measured series rather than replacing it, so real cloud
 seasonality survives: Ann Arbor's July dips below its June, and it still does
 after you move the site to 55°N.

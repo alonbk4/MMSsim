@@ -7,12 +7,13 @@ import {
   formatCoords, isPlausibleZip, locateDevice, lookupZip, plausibleClimates,
   type ResolvedLocation,
 } from '../engine/location';
-import { applyObservedClimate, parseObservedClimate } from '../engine/observed';
+import { ClimateFetchError, fetchClimate } from '../engine/climateFetch';
+import { parseObservedClimate } from '../engine/observed';
 import { sunSummary } from '../engine/solar';
 import type { SiteProfile } from '../engine/types';
 import { useApp } from '../state/store';
 import { ClimateChart, SunHoursChart } from './charts';
-import { compact, Field } from './common';
+import { compact, Field, Icon } from './common';
 
 export function SitePane() {
   const site = useApp((s) => s.design.site);
@@ -80,7 +81,7 @@ export function SitePane() {
             ) : (
               <p className="card-note">{preset.blurb}</p>
             )}
-            <ClimateImport />
+            <ClimateSources />
           </div>
         </div>
 
@@ -207,9 +208,96 @@ export function SitePane() {
  * integration nobody has seen work, the tool does the request in a browser and
  * this takes the twelve-number result.
  */
+/**
+ * Where the weather comes from: fetch it for the current coordinates, switch
+ * between records already kept, or paste one in from the offline tool.
+ */
+function ClimateSources() {
+  const design = useApp((s) => s.design);
+  const site = design.site;
+  const saveClimate = useApp((s) => s.saveClimate);
+  const useClimateRecord = useApp((s) => s.useClimate);
+  const removeClimate = useApp((s) => s.removeClimate);
+
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const label = site.locationLabel
+    ?? (site.longitude !== undefined ? formatCoords(site.latitude, site.longitude) : null);
+
+  const fetchHere = async () => {
+    if (site.longitude === undefined) {
+      setError('Set a location first — a ZIP code, or Use my location below.');
+      return;
+    }
+    setBusy(true); setError(null); setNote(null);
+    try {
+      const { climate, gridOffsetKm } = await fetchClimate(site.latitude, site.longitude);
+      saveClimate(climate, label ?? formatCoords(site.latitude, site.longitude));
+      setNote(
+        `Loaded ${climate.years[0]}–${climate.years[1]}. `
+        + `The nearest grid cell is ${gridOffsetKm < 1 ? 'under a kilometre' : `${gridOffsetKm.toFixed(0)} km`} `
+        + 'from the point you gave, which is the resolution of the weather, not of your yard.',
+      );
+    } catch (e) {
+      setError(e instanceof ClimateFetchError ? e.message
+        : 'Something went wrong fetching the weather.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="stack" style={{ gap: 8 }}>
+      <div className="row wrap" style={{ gap: 8 }}>
+        <button className="btn small" onClick={fetchHere} disabled={busy}>
+          {busy ? 'Fetching 15 years…' : 'Fetch weather for this location'}
+        </button>
+        <ClimateImport />
+      </div>
+
+      {note && <p className="meta-line" style={{ color: 'var(--success-text)' }}>{note}</p>}
+      {error && <p className="meta-line" style={{ color: 'var(--status-critical)' }}>{error}</p>}
+
+      {design.climates.length > 0 && (
+        <div className="stack" style={{ gap: 5 }}>
+          <span className="meta-line">Saved locations</span>
+          {design.climates.map((c) => {
+            const active = site.climateSource === 'observed'
+              && Math.abs(site.latitude - c.latitude) < 0.001
+              && Math.abs((site.longitude ?? 999) - c.longitude) < 0.001;
+            return (
+              <div key={c.id} className="row" style={{ gap: 8 }}>
+                <button
+                  className="chip" aria-pressed={active} style={{ flex: '1 1 auto', textAlign: 'left' }}
+                  onClick={() => useClimateRecord(c.id)}
+                >
+                  {c.name}
+                  <span style={{ opacity: 0.7 }}>
+                    {' · '}{Math.round(c.rainfallMm.reduce((a, b) => a + b, 0))} mm
+                    {' · '}{c.years[0]}–{c.years[1]}
+                  </span>
+                </button>
+                {design.climates.length > 1 && (
+                  <button
+                    className="btn small danger" aria-label={`Remove ${c.name}`}
+                    onClick={() => removeClimate(c.id)}
+                  >
+                    <Icon name="trash" size={13} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ClimateImport() {
-  const site = useApp((s) => s.design.site);
-  const setSite = useApp((s) => s.setSite);
+  const saveClimate = useApp((s) => s.saveClimate);
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -217,7 +305,7 @@ function ClimateImport() {
   const load = () => {
     const parsed = parseObservedClimate(text);
     if ('error' in parsed) { setError(parsed.error); return; }
-    setSite(applyObservedClimate(site, parsed));
+    saveClimate(parsed, formatCoords(parsed.latitude, parsed.longitude));
     setError(null);
     setText('');
     setOpen(false);
@@ -225,14 +313,14 @@ function ClimateImport() {
 
   if (!open) {
     return (
-      <button className="btn small" style={{ alignSelf: 'flex-start' }} onClick={() => setOpen(true)}>
-        Load measured weather
+      <button className="btn small" onClick={() => setOpen(true)}>
+        Paste from the offline tool
       </button>
     );
   }
 
   return (
-    <div className="stack" style={{ gap: 8 }}>
+    <div className="stack" style={{ gap: 8, flexBasis: '100%' }}>
       <p className="card-note" style={{ marginBottom: 0 }}>
         Open <code>tools/climate-fetch.html</code> from the repository in a browser,
         enter your coordinates, and paste what it produces here. Fifteen years of
