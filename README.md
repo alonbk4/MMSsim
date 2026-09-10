@@ -96,6 +96,20 @@ demand and heating degree days. That is why a solar array in the arid preset
 outproduces the same array in the oceanic one, and why a bed in a cold
 continental climate concentrates its whole yield into four months.
 
+**Finding the site.** Enter a US ZIP code or tap *Use my location* and the
+latitude is set for you. Both routes work with no network: the device's own fix,
+and a bundled table of ZIP centroids built from the `us-zips` dataset and
+collapsed to ~1,400 prefixes (under 10 KB gzipped, worst case 1.5° of latitude,
+median 0.23°). There is deliberately no geocoding service in the loop — the app
+is meant to keep working in a shed at the bottom of the garden, which is where
+you would be standing when you wanted it.
+
+What a location buys you is the sun, and only the sun. It cannot tell you your
+climate: two places at 45°N can be Portland or Ulaanbaatar, and no amount of
+coordinates settles which without real weather data. So the climate preset
+stays your call — the app just marks the ones that would be unusual at your
+latitude and records where the latitude came from, and how sure it is.
+
 **Sun comes from geometry.** The climate preset knows how cloudy a place is;
 latitude knows how much sun there is to be blocked, how high it climbs and how
 long the day runs. Set a latitude and the monthly sun-hours are recomputed

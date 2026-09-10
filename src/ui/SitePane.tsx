@@ -1,7 +1,12 @@
+import { useState } from 'react';
 import {
   applyLatitude, applySlope, buildDrivers, CLIMATE_PRESETS, getPreset,
   runoffFraction, siteFromPreset, solarLatitude,
 } from '../engine/climate';
+import {
+  formatCoords, isPlausibleZip, locateDevice, lookupZip, plausibleClimates,
+  type ResolvedLocation,
+} from '../engine/location';
 import { sunSummary } from '../engine/solar';
 import type { SiteProfile } from '../engine/types';
 import { useApp } from '../state/store';
@@ -36,9 +41,14 @@ export function SitePane() {
                   if (p) setSite(siteFromPreset(p, site));
                 }}
               >
-                {CLIMATE_PRESETS.map((p) => (
-                  <option key={p.id} value={p.id}>{p.label}</option>
-                ))}
+                {CLIMATE_PRESETS.map((p) => {
+                  const likely = plausibleClimates(site.latitude).includes(p.id);
+                  return (
+                    <option key={p.id} value={p.id}>
+                      {p.label}{likely ? '' : '  — unusual at this latitude'}
+                    </option>
+                  );
+                })}
               </select>
             </Field>
             <p className="card-note">{preset.blurb}</p>
@@ -152,6 +162,75 @@ export function SitePane() {
   );
 }
 
+/**
+ * Finding the site without a network.
+ *
+ * Both routes work offline: the device's own fix, and a bundled table of US ZIP
+ * centroids. Deliberately no geocoding service — this is meant to keep working
+ * in a shed at the bottom of the garden, which is where you would actually be
+ * standing when you wanted it.
+ */
+function LocationFinder({ onFound }: { onFound: (loc: ResolvedLocation) => void }) {
+  const [zip, setZip] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const useDevice = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      onFound(await locateDevice());
+      setZip('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not get a position.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const useZip = () => {
+    const hit = lookupZip(zip);
+    if (!hit) {
+      setError('No match for that ZIP. Check the digits, or set the latitude by hand below.');
+      return;
+    }
+    setError(null);
+    onFound(hit);
+  };
+
+  return (
+    <div className="stack" style={{ gap: 8 }}>
+      <div className="row wrap" style={{ gap: 8 }}>
+        <button className="btn" onClick={useDevice} disabled={busy}>
+          {busy ? 'Locating…' : 'Use my location'}
+        </button>
+        <span className="row" style={{ gap: 6, flex: '1 1 190px' }}>
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="US ZIP code"
+            value={zip}
+            onChange={(e) => { setZip(e.target.value); setError(null); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') useZip(); }}
+            aria-label="US ZIP code"
+          />
+          <button className="btn" onClick={useZip} disabled={!isPlausibleZip(zip)}>
+            Find
+          </button>
+        </span>
+      </div>
+      {error && (
+        <p className="meta-line" style={{ color: 'var(--status-critical)' }}>{error}</p>
+      )}
+      <p className="meta-line">
+        Sets your latitude, which is what places the sun. It cannot tell you your
+        climate — two places at 45° can be Portland or Mongolia — so that stays
+        your call above.
+      </p>
+    </div>
+  );
+}
+
 function SlopeControl() {
   const site = useApp((s) => s.design.site);
   const setSite = useApp((s) => s.setSite);
@@ -218,10 +297,38 @@ function LatitudeControl() {
   const sun = sunSummary(site.latitude);
   const hemisphere = site.latitude < 0 ? 'S' : 'N';
 
-  const move = (lat: number) => setSite(applyLatitude(site, lat));
+  const move = (lat: number) =>
+    setSite({
+      ...applyLatitude(site, lat),
+      locationSource: 'manual',
+      locationLabel: undefined,
+      locationAccuracyDeg: undefined,
+    });
+
+  /** Adopt a looked-up position, keeping a record of where it came from. */
+  const adopt = (loc: ResolvedLocation) =>
+    setSite({
+      ...applyLatitude(site, loc.latitude),
+      longitude: loc.longitude,
+      locationLabel: loc.label,
+      locationSource: loc.source,
+      locationAccuracyDeg: loc.accuracyDeg,
+    });
 
   return (
     <div className="stack">
+      <LocationFinder onFound={adopt} />
+
+      {site.locationLabel && (
+        <p className="meta-line" style={{ marginTop: -2 }}>
+          Set from {site.locationLabel}
+          {site.locationSource === 'zip' && site.locationAccuracyDeg !== undefined
+            && ` — good to about ${site.locationAccuracyDeg.toFixed(1)}° of latitude, which moves the sun by the same`}
+          {site.locationSource === 'device' && ' — reported by this device'}
+          {site.longitude !== undefined && ` · ${formatCoords(site.latitude, site.longitude)}`}
+        </p>
+      )}
+
       <Field
         label="Latitude"
         value={`${Math.abs(site.latitude).toFixed(1)}° ${hemisphere}`}

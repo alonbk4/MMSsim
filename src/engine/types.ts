@@ -235,6 +235,12 @@ export interface SiteProfile {
    * cloud is accounted for.
    */
   latitude: number;
+  /** Degrees east (positive) or west. Recorded for provenance, not modelled. */
+  longitude?: number;
+  /** How the latitude was arrived at, and how sure it is. */
+  locationLabel?: string;
+  locationSource?: 'manual' | 'zip' | 'device';
+  locationAccuracyDeg?: number;
   /** Total annual rainfall, mm. Scales the preset's monthly distribution. */
   annualRainfallMm: number;
   /** Monthly rainfall distribution as fractions summing to 1. */
