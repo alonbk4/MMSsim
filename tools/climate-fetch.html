@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MMSsim — fetch real climate normals</title>
+<style>
+  :root { color-scheme: light dark; --ink:#0b0b0b; --dim:#52514e; --line:#d8d7d0;
+          --bg:#f7f6f2; --card:#fff; --accent:#1f5c3d; --bad:#c0392b; }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink:#fff; --dim:#c3c2b7; --line:#333; --bg:#111; --card:#1a1a19; --accent:#6fbf8f; }
+  }
+  * { box-sizing:border-box }
+  body { margin:0; padding:24px 16px 60px; background:var(--bg); color:var(--ink);
+         font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .wrap { max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:16px }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px }
+  h1 { font-size:1.15rem; margin:0 0 4px } h2 { font-size:.95rem; margin:0 0 10px }
+  p { margin:0 0 10px; color:var(--dim); font-size:13.5px }
+  label { display:block; font-size:12px; font-weight:600; color:var(--dim); margin-bottom:4px }
+  input { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px;
+          background:var(--bg); color:var(--ink); font:inherit }
+  .row { display:flex; gap:10px; flex-wrap:wrap } .row > div { flex:1 1 150px }
+  button { padding:9px 16px; border-radius:999px; border:1px solid var(--accent);
+           background:var(--accent); color:#fff; font:inherit; font-weight:600; cursor:pointer }
+  @media (prefers-color-scheme: dark) { button { color:#111 } }
+  button.ghost { background:none; color:var(--ink); border-color:var(--line) }
+  button:disabled { opacity:.5; cursor:default }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; font-variant-numeric:tabular-nums }
+  th,td { text-align:right; padding:4px 6px; border-bottom:1px solid var(--line) }
+  th:first-child,td:first-child { text-align:left }
+  textarea { width:100%; min-height:180px; font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;
+             padding:10px; border:1px solid var(--line); border-radius:8px;
+             background:var(--bg); color:var(--ink) }
+  .err { color:var(--bad); font-size:13px; white-space:pre-wrap }
+  .hint { font-size:12px; color:var(--dim) }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="card">
+  <h1>Real climate normals for your site</h1>
+  <p>
+    Fetches fifteen years of daily weather for one point from the Open-Meteo archive
+    (ERA5 reanalysis, free, no key) and averages it into the twelve monthly numbers
+    MMSsim actually uses. Everything happens in this page — nothing is uploaded
+    anywhere, and the only thing that leaves your browser is a latitude and a longitude.
+  </p>
+  <p class="hint">
+    Data © Open-Meteo, CC-BY-4.0, derived from ECMWF ERA5.
+  </p>
+</div>
+
+<div class="card">
+  <h2>Where</h2>
+  <div class="row">
+    <div><label for="lat">Latitude</label><input id="lat" value="42.27" inputmode="decimal"></div>
+    <div><label for="lon">Longitude</label><input id="lon" value="-83.73" inputmode="decimal"></div>
+    <div><label for="from">From year</label><input id="from" value="2010" inputmode="numeric"></div>
+    <div><label for="to">To year</label><input id="to" value="2024" inputmode="numeric"></div>
+  </div>
+  <div class="row" style="margin-top:12px;align-items:center">
+    <button id="go" style="flex:0 0 auto">Fetch and average</button>
+    <span id="status" class="hint" style="flex:1 1 auto"></span>
+  </div>
+  <div id="error" class="err" style="margin-top:10px"></div>
+</div>
+
+<div class="card" id="out" hidden>
+  <h2>What came back</h2>
+  <div id="summary"></div>
+  <table id="table"></table>
+  <p style="margin-top:14px">Paste everything below back into the chat:</p>
+  <textarea id="payload" readonly></textarea>
+  <div class="row" style="margin-top:10px">
+    <button id="copy" style="flex:0 0 auto">Copy</button>
+  </div>
+</div>
+
+<div class="card" id="rawcard" hidden>
+  <h2>Raw response (for debugging)</h2>
+  <p>Something did not line up. Paste this back too — it says what the API actually returned.</p>
+  <textarea id="raw" readonly></textarea>
+</div>
+
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// Daily variables we want. Any that the API does not know about are reported
+// rather than silently dropped, so a wrong guess here is visible.
+const WANTED = [
+  'temperature_2m_mean',
+  'precipitation_sum',
+  'et0_fao_evapotranspiration',
+  'shortwave_radiation_sum',
+];
+
+$('go').addEventListener('click', run);
+$('copy').addEventListener('click', async () => {
+  await navigator.clipboard.writeText($('payload').value);
+  $('copy').textContent = 'Copied';
+  setTimeout(() => ($('copy').textContent = 'Copy'), 1500);
+});
+
+async function run() {
+  const lat = parseFloat($('lat').value), lon = parseFloat($('lon').value);
+  const y0 = parseInt($('from').value, 10), y1 = parseInt($('to').value, 10);
+  $('error').textContent = ''; $('out').hidden = true; $('rawcard').hidden = true;
+  if (!isFinite(lat) || !isFinite(lon) || !(y1 >= y0)) {
+    $('error').textContent = 'Check the latitude, longitude and years.'; return;
+  }
+
+  const url = 'https://archive-api.open-meteo.com/v1/archive'
+    + `?latitude=${lat}&longitude=${lon}`
+    + `&start_date=${y0}-01-01&end_date=${y1}-12-31`
+    + `&daily=${WANTED.join(',')}`
+    + '&timezone=auto';
+
+  $('go').disabled = true;
+  $('status').textContent = 'Fetching about ' + ((y1 - y0 + 1) * 365).toLocaleString() + ' days…';
+  let text = '';
+  try {
+    const res = await fetch(url);
+    text = await res.text();
+    if (!res.ok) throw new Error(`HTTP ${res.status}. ${text.slice(0, 400)}`);
+    const data = JSON.parse(text);
+    render(aggregate(data), data, lat, lon, y0, y1);
+    $('status').textContent = 'Done.';
+  } catch (e) {
+    $('status').textContent = '';
+    $('error').textContent = String(e && e.message ? e.message : e)
+      + '\n\nIf this says "Failed to fetch", the request never left the browser — '
+      + 'usually an extension or a network blocking the host.';
+    if (text) { $('rawcard').hidden = false; $('raw').value = text.slice(0, 4000); }
+  } finally {
+    $('go').disabled = false;
+  }
+}
+
+/** Average the daily series into twelve months. */
+function aggregate(data) {
+  const d = data.daily;
+  if (!d || !d.time) throw new Error('No daily block in the response.');
+  const missing = WANTED.filter((k) => !(k in d));
+  const sumByMonth = {}, daysByMonth = new Array(12).fill(0);
+  const yearsSeen = {};
+  for (const k of WANTED) if (k in d) sumByMonth[k] = new Array(12).fill(0);
+
+  for (let i = 0; i < d.time.length; i++) {
+    const t = d.time[i];
+    const m = parseInt(t.slice(5, 7), 10) - 1;
+    const y = t.slice(0, 4);
+    (yearsSeen[m] ??= new Set()).add(y);
+    daysByMonth[m]++;
+    for (const k of WANTED) {
+      if (!(k in d)) continue;
+      const v = d[k][i];
+      if (typeof v === 'number' && isFinite(v)) sumByMonth[k][m] += v;
+    }
+  }
+
+  const years = (m) => (yearsSeen[m] ? yearsSeen[m].size : 1);
+  const perDay = (k, m) => (daysByMonth[m] ? sumByMonth[k][m] / daysByMonth[m] : 0);
+  const perMonth = (k, m) => (sumByMonth[k] ? sumByMonth[k][m] / years(m) : 0);
+
+  const out = { missing, units: data.daily_units || {}, elevation: data.elevation,
+                timezone: data.timezone, months: [] };
+  for (let m = 0; m < 12; m++) {
+    out.months.push({
+      month: MONTHS[m],
+      meanTempC: 'temperature_2m_mean' in d ? +perDay('temperature_2m_mean', m).toFixed(1) : null,
+      rainfallMm: 'precipitation_sum' in d ? +perMonth('precipitation_sum', m).toFixed(1) : null,
+      etoMm: 'et0_fao_evapotranspiration' in d ? +perMonth('et0_fao_evapotranspiration', m).toFixed(1) : null,
+      // Shortwave sum arrives in MJ/m²/day; 3.6 MJ is 1 kWh, which is one peak sun hour.
+      peakSunHours: 'shortwave_radiation_sum' in d
+        ? +(perDay('shortwave_radiation_sum', m) / 3.6).toFixed(2) : null,
+    });
+  }
+  return out;
+}
+
+function render(agg, raw, lat, lon, y0, y1) {
+  $('out').hidden = false;
+  const rain = agg.months.reduce((a, b) => a + (b.rainfallMm || 0), 0);
+  const cold = agg.months.filter((m) => m.meanTempC !== null && m.meanTempC < 5).length;
+  $('summary').innerHTML =
+    `<p><strong>${rain.toFixed(0)} mm</strong> of rain a year · `
+    + `<strong>${cold}</strong> months averaging below 5&nbsp;°C · `
+    + `elevation ${agg.elevation ?? '?'} m · ${agg.timezone ?? ''}</p>`
+    + (agg.missing.length
+      ? `<p class="err">The API did not return: ${agg.missing.join(', ')}</p>` : '');
+
+  $('table').innerHTML =
+    '<thead><tr><th>Month</th><th>Temp °C</th><th>Rain mm</th><th>ET₀ mm</th><th>Sun h/day</th></tr></thead>'
+    + '<tbody>' + agg.months.map((m) =>
+      `<tr><td>${m.month}</td><td>${m.meanTempC ?? '—'}</td><td>${m.rainfallMm ?? '—'}</td>`
+      + `<td>${m.etoMm ?? '—'}</td><td>${m.peakSunHours ?? '—'}</td></tr>`).join('')
+    + '</tbody>';
+
+  $('payload').value = JSON.stringify({
+    mmssimClimate: 1,
+    source: 'Open-Meteo ERA5 archive (CC-BY-4.0)',
+    fetched: new Date().toISOString().slice(0, 10),
+    latitude: lat, longitude: lon, years: [y0, y1],
+    elevation: agg.elevation, timezone: agg.timezone,
+    units: agg.units,
+    missing: agg.missing,
+    meanTempC: agg.months.map((m) => m.meanTempC),
+    rainfallMm: agg.months.map((m) => m.rainfallMm),
+    etoMm: agg.months.map((m) => m.etoMm),
+    peakSunHours: agg.months.map((m) => m.peakSunHours),
+  }, null, 1);
+}
+</script>
+</body>
+</html>
