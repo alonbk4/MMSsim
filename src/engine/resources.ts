@@ -49,6 +49,10 @@ export const RESOURCES: Record<ResourceId, ResourceMeta> = {
     id: 'biomass', label: 'Woody biomass / fuel', unit: 'kg dry / month',
     shortUnit: 'kg', goal: true, byproduct: false, category: 'energy',
   },
+  biochar: {
+    id: 'biochar', label: 'Raw biochar', unit: 'kg / month',
+    shortUnit: 'kg', goal: false, byproduct: false, category: 'nutrient',
+  },
   labor: {
     id: 'labor', label: 'Your time', unit: 'hours / month',
     shortUnit: 'h', goal: false, byproduct: false, category: 'effort',
@@ -58,7 +62,7 @@ export const RESOURCES: Record<ResourceId, ResourceMeta> = {
 export const RESOURCE_ORDER: ResourceId[] = [
   'waterPotable', 'waterIrrigation', 'electricity', 'heat',
   'foodCalories', 'foodProtein', 'compost', 'animalFeed',
-  'biomass', 'greywater', 'blackwater', 'organicWaste', 'labor',
+  'biomass', 'biochar', 'greywater', 'blackwater', 'organicWaste', 'labor',
 ];
 
 export const EVIDENCE: Record<EvidenceTier, EvidenceMeta> = {
@@ -121,6 +125,23 @@ export const EVIDENCE: Record<EvidenceTier, EvidenceMeta> = {
 export const EVIDENCE_ORDER: EvidenceTier[] = [
   'experimental', 'researched', 'testedFailed', 'testedPartial', 'testedSuccess',
 ];
+
+/**
+ * Look up a tier's metadata without trusting the input.
+ *
+ * Tiers arrive from saved designs and imported files, so an unknown string is
+ * a question of when rather than whether — a hand-edited export, or a value
+ * from a future version opened by an older build. Indexing the map blind
+ * returns undefined and the next property access takes the page down, so it
+ * falls back to the tier that claims least.
+ */
+export function evidenceMeta(tier: string | undefined): EvidenceMeta {
+  return (tier && EVIDENCE[tier as EvidenceTier]) || EVIDENCE.researched;
+}
+
+export function isEvidenceTier(v: unknown): v is EvidenceTier {
+  return typeof v === 'string' && v in EVIDENCE;
+}
 
 /** The tiers that mean you actually built the thing. */
 export const TESTED_TIERS: EvidenceTier[] = ['testedFailed', 'testedPartial', 'testedSuccess'];

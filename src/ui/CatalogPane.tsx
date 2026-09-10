@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { CATALOG, CATALOG_BY_ID } from '../engine/catalog';
 import { buildDrivers } from '../engine/climate';
-import { EVIDENCE, EVIDENCE_ORDER, RESOURCES } from '../engine/resources';
+import { EVIDENCE, EVIDENCE_ORDER, evidenceMeta, RESOURCES } from '../engine/resources';
 import { annualPerUnit, buildSeasonProfiles } from '../engine/simulate';
-import type { EvidenceTier, SystemCategory, SystemDef } from '../engine/types';
+import type { SystemCategory, SystemDef } from '../engine/types';
 import { systemById, useApp } from '../state/store';
 import {
   CATEGORY_ICON, CATEGORY_LABEL, compact, EvidenceBadge, Field, Icon, lower, money,
@@ -183,7 +183,7 @@ function SystemDetail({ def, onBack }: { def: SystemDef; onBack: () => void }) {
           <header><h2>Why it sits in this tier</h2></header>
           <p className="card-note">{def.notes}</p>
           <p className="meta-line" style={{ marginTop: 6 }}>
-            {EVIDENCE[def.evidence].blurb}
+            {evidenceMeta(def.evidence).blurb}
           </p>
           <h3 style={{ marginTop: 12, marginBottom: 4 }}>Where the numbers come from</h3>
           <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--text-secondary)', fontSize: 13 }}>
@@ -199,7 +199,7 @@ function SystemDetail({ def, onBack }: { def: SystemDef; onBack: () => void }) {
           {def.evidence === 'testedSuccess' ? (
             <p className="card-note">
               This one runs on your numbers. Its band is ±10% instead of the
-              ±{Math.round((1 - EVIDENCE[base.evidence].low) * 100)}% the catalog
+              ±{Math.round((1 - evidenceMeta(base.evidence).low) * 100)}% the catalog
               default carries — keep it honest by updating the figures as the seasons
               come in.
             </p>
@@ -225,7 +225,7 @@ function SystemDetail({ def, onBack }: { def: SystemDef; onBack: () => void }) {
             ))}
           </div>
           <p className="meta-line" style={{ marginTop: 6 }}>
-            {EVIDENCE[def.evidence].blurb}
+            {evidenceMeta(def.evidence).blurb}
           </p>
 
           {!editing && (
@@ -320,7 +320,7 @@ function SystemDetail({ def, onBack }: { def: SystemDef; onBack: () => void }) {
           {override && !editing && (
             <div className="meta-line" style={{ marginTop: 8 }}>
               Overridden: {[
-                override.evidence && `tier → ${EVIDENCE[override.evidence as EvidenceTier].label}`,
+                override.evidence && `tier → ${evidenceMeta(override.evidence).label}`,
                 override.yieldFactor && override.yieldFactor !== 1 && `output → ${Math.round(override.yieldFactor * 100)}%`,
                 override.capitalPerUnit !== undefined && override.capitalPerUnit !== base.capitalPerUnit && 'build cost',
                 override.flowOverrides && Object.keys(override.flowOverrides).length && `${Object.keys(override.flowOverrides).length} measured flows`,

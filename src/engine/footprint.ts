@@ -108,6 +108,18 @@ const ARCHETYPES: Record<string, Archetype> = {
   'fodder-sprouts': { kind: 'block', aspect: 2 },
   'duckweed-pond': { kind: 'blob' },
 
+  // Added from the yard's own list
+  'felt-grow-bags': { kind: 'cluster', itemAreaM2: 0.35, maxItems: 40 },
+  'felt-hanging-bags': { kind: 'band', thickness: 0.5 },
+  'grow-trellis': { kind: 'block', aspect: 5, rows: 3 },
+  'first-flush': { kind: 'disc' },
+  'chapin-bucket': { kind: 'cluster', itemAreaM2: 0.4, maxItems: 30 },
+  'aerobin': { kind: 'block', aspect: 1 },
+  'rain-garden': { kind: 'blob' },
+  'indoor-hydroponic-tower': { kind: 'disc' },
+  'biochar-tote': { kind: 'cells', per: 0.6 },
+  'food-recycler': { kind: 'block', aspect: 1.3 },
+
   // Sanitation
   'composting-toilet': { kind: 'block', aspect: 1.2 },
   'humanure-system': { kind: 'cells', per: 1.5 },
@@ -140,6 +152,20 @@ const CATEGORY_DEFAULT: Record<SystemCategory, Archetype> = {
 
 /** Smallest footprint we will draw, so a 0.2 m² bin is still a tap target. */
 const MIN_AREA = 1.4;
+/** And no shape gets thinner than this, however elongated its archetype. */
+const MIN_SIDE = 0.7;
+
+/**
+ * Hold a long shape back from becoming a hairline.
+ *
+ * A trellis is credited against the bed it stands over rather than owning
+ * ground, so its area clamps to the minimum — and an aspect of five turns that
+ * minimum into something half a metre wide that cannot be seen or tapped. The
+ * aspect gives way before the area does, because the area is the honest number.
+ */
+function clampAspect(aspect: number, area: number): number {
+  return Math.max(1, Math.min(aspect, area / (MIN_SIDE * MIN_SIDE)));
+}
 
 export function planFootprint(def: SystemDef, placement: Placement): PlanFootprint {
   const ground = def.footprintPerUnit * placement.units;
@@ -154,12 +180,12 @@ export function planFootprint(def: SystemDef, placement: Placement): PlanFootpri
 function buildShape(arch: Archetype, area: number, placement: Placement): PlanShape {
   switch (arch.kind) {
     case 'block': {
-      const aspect = arch.aspect ?? 1.5;
+      const aspect = clampAspect(arch.aspect ?? 1.5, area);
       const w = Math.sqrt(area * aspect);
       return { kind: 'block', w, h: area / w, aspect, rows: arch.rows ?? 0 };
     }
     case 'roof': {
-      const w = Math.sqrt(area * 1.9);
+      const w = Math.sqrt(area * clampAspect(1.9, area));
       return { kind: 'roof', w, h: area / w, grid: arch.grid };
     }
     case 'disc': {

@@ -9,8 +9,9 @@ describe('plan footprints', () => {
       const fp = planFootprint(def, makePlacement(def.id, def.unitDefault, 0, 0));
       expect(fp.w).toBeGreaterThan(0.5);
       expect(fp.h).toBeGreaterThan(0.5);
-      // Nothing should come out as a hairline sliver at a normal zoom.
-      expect(Math.min(fp.w, fp.h)).toBeGreaterThan(0.6);
+      // Nothing should come out as a hairline sliver at a normal zoom, however
+      // elongated its archetype or small its footprint.
+      expect(Math.min(fp.w, fp.h), def.id).toBeGreaterThanOrEqual(0.7);
       expect(Number.isFinite(fp.areaM2)).toBe(true);
     }
   });
@@ -23,6 +24,16 @@ describe('plan footprints', () => {
       if (fp.shape.kind !== 'cluster') continue;
       expect(def.unitLabel).not.toMatch(/m²/);
       expect(fp.shape.items.length).toBeLessThanOrEqual(40);
+    }
+  });
+
+  it('gives a zero-footprint system something you can still tap', () => {
+    // Trellises, drip lines and mulch are credited against ground they do not
+    // own, so their footprint is nil and the drawn shape is a minimum.
+    for (const id of ['grow-trellis', 'drip-irrigation', 'sheet-mulch']) {
+      const def = CATALOG.find((d) => d.id === id)!;
+      const fp = planFootprint(def, makePlacement(id, def.unitDefault, 0, 0));
+      expect(Math.min(fp.w, fp.h), id).toBeGreaterThanOrEqual(0.7);
     }
   });
 

@@ -3,6 +3,7 @@ import { CLIMATE_PRESETS } from './climate';
 import { createDefaultDesign, DESIGN_VERSION, normalizeDesign } from './defaults';
 import { simulate } from './simulate';
 import { CATALOG_BY_ID } from './catalog';
+import { evidenceMeta, isEvidenceTier } from './resources';
 
 /** A design shaped the way it was before features, zones and climates existed. */
 const legacy = () => ({
@@ -106,5 +107,34 @@ describe('opening a design saved by an older version', () => {
     expect(d.placements[0].units).toBe(1);
     expect(d.placements[0].x).toBe(0);
     expect(d.placements[0].enabled).toBe(true);
+  });
+});
+
+describe('evidence values from outside', () => {
+  it('drops a tier it does not recognise instead of crashing on it', () => {
+    // Hand-edited exports and files from a future version both land here.
+    const d = normalizeDesign({
+      ...legacy(),
+      overrides: {
+        'annual-beds': { evidence: 'gold-standard', yieldFactor: 1.1 },
+        'solar-pv': { evidence: 'testedPartial' },
+        'poly-tank': { evidence: 'proven' },
+      },
+    });
+    expect(d.overrides['annual-beds'].evidence).toBeUndefined();
+    // …while keeping the rest of that override.
+    expect(d.overrides['annual-beds'].yieldFactor).toBe(1.1);
+    // Known tiers pass through, and the retired one is mapped forward.
+    expect(d.overrides['solar-pv'].evidence).toBe('testedPartial');
+    expect(d.overrides['poly-tank'].evidence).toBe('testedSuccess');
+    expect(() => simulate(d, CATALOG_BY_ID)).not.toThrow();
+  });
+
+  it('gives an unknown tier a meaning rather than undefined', () => {
+    expect(evidenceMeta('nonsense').tier).toBe('researched');
+    expect(evidenceMeta(undefined).tier).toBe('researched');
+    expect(evidenceMeta('testedFailed').tier).toBe('testedFailed');
+    expect(isEvidenceTier('testedFailed')).toBe(true);
+    expect(isEvidenceTier('proven')).toBe(false);
   });
 });

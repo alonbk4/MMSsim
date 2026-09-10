@@ -4,7 +4,7 @@ import { applyLatitude, buildDrivers, CLIMATE_PRESETS, DAYS_IN_MONTH, DEFAULT_SI
 import { createDefaultDesign, emptyDesign, makePlacement } from './defaults';
 import { EVIDENCE, EVIDENCE_ORDER, RESOURCE_ORDER, TESTED_TIERS } from './resources';
 import { simulate } from './simulate';
-import type { Design } from './types';
+import type { Design, EvidenceTier } from './types';
 
 function designWith(...placements: ReturnType<typeof makePlacement>[]): Design {
   const d = emptyDesign();
@@ -274,9 +274,9 @@ describe('catalog integrity', () => {
 });
 
 describe('what happened when you tried it', () => {
-  const bedsWith = (evidence: string) => {
+  const bedsWith = (evidence: EvidenceTier) => {
     const design = designWith(makePlacement('annual-beds', 50, 0, 0));
-    design.overrides['annual-beds'] = { evidence: evidence as never };
+    design.overrides['annual-beds'] = { evidence };
     return simulate(design, CATALOG_BY_ID);
   };
   const food = (r: ReturnType<typeof simulate>) => r.expected.resources.foodCalories.produced;
@@ -287,7 +287,7 @@ describe('what happened when you tried it', () => {
     ]);
     // Each step narrows the range, apart from the tested tiers which are
     // narrow because you watched what happened.
-    const width = (t: string) => EVIDENCE[t as never].high - EVIDENCE[t as never].low;
+    const width = (t: EvidenceTier) => EVIDENCE[t].high - EVIDENCE[t].low;
     expect(width('experimental')).toBeGreaterThan(width('researched'));
     expect(width('researched')).toBeGreaterThan(width('testedSuccess'));
   });

@@ -21,6 +21,7 @@ export type ResourceId =
   | 'organicWaste'
   | 'animalFeed'
   | 'biomass'
+  | 'biochar'
   | 'labor';
 
 export interface ResourceMeta {

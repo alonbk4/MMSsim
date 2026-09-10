@@ -1,4 +1,5 @@
 import { CLIMATE_PRESETS, DEFAULT_SITE } from './climate';
+import { isEvidenceTier } from './resources';
 import { ANN_ARBOR } from './data/observed/ann-arbor';
 import type { Design, Placement, SiteProfile, SystemOverride } from './types';
 
@@ -93,9 +94,11 @@ function normalizeOverrides(raw: unknown): Design['overrides'] {
   const out: Design['overrides'] = {};
   for (const [id, ov] of Object.entries(raw as Record<string, SystemOverride>)) {
     if (!ov || typeof ov !== 'object') continue;
-    out[id] = (ov.evidence as string) === 'proven'
-      ? { ...ov, evidence: 'testedSuccess' }
-      : ov;
+    const raw = ov.evidence as string | undefined;
+    const evidence = raw === 'proven' ? 'testedSuccess'
+      : isEvidenceTier(raw) ? raw
+      : undefined;
+    out[id] = evidence ? { ...ov, evidence } : { ...ov, evidence: undefined };
   }
   return out;
 }

@@ -17,6 +17,43 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      /*
+       * Last resort against a blank page.
+       *
+       * Everything below the React root is protected by an error boundary, but
+       * a boundary can only catch what happens after React mounts. If the
+       * bundle itself fails to load — a stale worker asking for a file the
+       * deploy replaced, a half-written cache — nothing renders and there is
+       * no code left running to say so.
+       *
+       * So: if the app has not reported itself booted a few seconds after
+       * load, throw away the service worker and its caches and reload. Once
+       * only, guarded by sessionStorage, because a reload loop is worse than
+       * the blank page it was trying to fix.
+       */
+      window.__mmssimBooted = false;
+      window.setTimeout(function () {
+        if (window.__mmssimBooted) return;
+        try {
+          if (sessionStorage.getItem('mmssim.recovering')) return;
+          sessionStorage.setItem('mmssim.recovering', '1');
+        } catch (e) { return; }
+        var done = function () { location.reload(); };
+        var jobs = [];
+        if ('serviceWorker' in navigator) {
+          jobs.push(navigator.serviceWorker.getRegistrations()
+            .then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); })
+            .catch(function () {}));
+        }
+        if (window.caches) {
+          jobs.push(caches.keys()
+            .then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); })
+            .catch(function () {}));
+        }
+        Promise.all(jobs).then(done, done);
+      }, 5000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

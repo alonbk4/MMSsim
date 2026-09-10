@@ -30,6 +30,44 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        /*
+         * The page is deliberately not precached. Workbox maps a request for
+         * "/" onto a precached index.html and serves it cache-first, which is
+         * the whole problem: leave it in and the runtime rule below never sees
+         * a navigation. Offline still works — the first successful visit puts
+         * the page in the runtime cache, and every visit after that can come
+         * from it.
+         */
+        globIgnores: ['index.html'],
+        cleanupOutdatedCaches: true,
+        /*
+         * Serve the page itself network-first.
+         *
+         * Precached HTML is served cache-first, which means the first reload
+         * after a deploy hands back the previous shell — and that shell asks
+         * for asset filenames that the new deploy has already replaced. They
+         * are gone from the server, and the moment the new worker tidies the
+         * old cache they are gone from there too: a request for a file that
+         * exists nowhere, and a blank page.
+         *
+         * Going to the network first for navigations means an online visitor
+         * always gets the current HTML with asset names that resolve. The
+         * three-second timeout keeps it usable on a bad connection, and the
+         * cache still answers when there is no network at all, so this stays
+         * an app you can open in a shed.
+         */
+        navigateFallback: undefined,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'mmssim-pages',
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 8 },
+            },
+          },
+        ],
       },
     }),
   ],

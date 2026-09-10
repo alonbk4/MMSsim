@@ -53,6 +53,17 @@ const G: Record<string, ReactNode> = {
   larva: <><path d="M4 14q2-3 4 0t4 0 4 0 4 0" /><circle cx="19.4" cy="12.6" r="1.4" /></>,
   duckweed: <><circle cx="8" cy="10" r="2.6" /><circle cx="14.5" cy="8.4" r="2" /><circle cx="12" cy="14" r="2.8" /><path d="M3 19h18" /></>,
 
+  /* ---- containers, supports, indoor ---- */
+  growbag: <><path d="M6 8h12l-1.4 12H7.4z" /><path d="M6 8c0-1.2 2.7-2 6-2s6 .8 6 2" /><path d="M12 14v6M12 16l-2.4-2M12 17l2.4-2" /></>,
+  pocket: <><path d="M3 4h18v4H3z" /><path d="M5 8v5a3 3 0 0 0 6 0V8M13 8v5a3 3 0 0 0 6 0V8" /><path d="M8 18v3M16 18v3" /></>,
+  trellis: <><path d="M4 21V6M12 21V4M20 21V6" /><path d="M4 10h16M4 15h16" /><path d="M12 8c2 0 3-1.4 3-3-2 0-3 1.4-3 3z" /></>,
+  bucketdrip: <><path d="M7 3h10l-1.2 8H8.2z" /><path d="M12 11v4" /><path d="M4 15h16" /><path d="M7 15v2M12 15v2M17 15v2" /><circle cx="7" cy="20" r="1.1" /><circle cx="12" cy="20" r="1.1" /><circle cx="17" cy="20" r="1.1" /></>,
+  aerobin: <><rect x="5" y="6" width="14" height="15" rx="1.6" /><path d="M8 6V4h8v2" /><path d="M12 9v9" /><path d="M12 11l-2.6-1.6M12 14l2.6-1.6M12 17l-2.6-1.6" /></>,
+  raingarden: <><path d="M2 12q4-5 10-5t10 5" /><path d="M4 12q3 7 8 7t8-7" /><path d="M9 6V3M12 5.6V2M15 6V3" strokeDasharray="1.5 1.6" /></>,
+  tower: <><path d="M9 21h6" /><path d="M12 21V4" /><path d="M12 7c-3 0-4.5-1.6-4.5-4C10 3 12 4.4 12 7z" /><path d="M12 12c3 0 4.5-1.6 4.5-4C14 8 12 9.4 12 12z" /><path d="M12 17c-3 0-4.5-1.6-4.5-4C10 13 12 14.4 12 17z" /><path d="M4 3h3M17 3h3" /></>,
+  recycler: <><rect x="4" y="7" width="16" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M9 12.5a3.2 3.2 0 0 1 5.6-1.6" /><path d="M14.6 9.4v1.8h-1.8" /><path d="M15 15a3.2 3.2 0 0 1-5.6 1.6" /><path d="M9.4 18v-1.8h1.8" /></>,
+  flush: <><path d="M9 3h6v7l3 4v7H6v-7l3-4z" /><path d="M6 17h12" /><circle cx="12" cy="20" r="1.2" /></>,
+
   /* ---- sanitation / soil ---- */
   toilet: <><path d="M6 4h11l-1 7H7z" /><path d="M7 11c-1 4 0 6.6 5 9 5-2.4 6-5 5-9" /></>,
   bucket: <><path d="M5 8h14l-1.6 12H6.6z" /><path d="M8 8a4 4 0 0 1 8 0" /></>,
@@ -116,6 +127,17 @@ const BY_SYSTEM: Record<string, string> = {
   'bsf-larvae': 'larva',
   'fodder-sprouts': 'tray',
   'duckweed-pond': 'duckweed',
+
+  'felt-grow-bags': 'growbag',
+  'felt-hanging-bags': 'pocket',
+  'grow-trellis': 'trellis',
+  'first-flush': 'flush',
+  'chapin-bucket': 'bucketdrip',
+  'aerobin': 'aerobin',
+  'rain-garden': 'raingarden',
+  'indoor-hydroponic-tower': 'tower',
+  'biochar-tote': 'bucket',
+  'food-recycler': 'recycler',
 
   'composting-toilet': 'toilet',
   'humanure-system': 'bucket',

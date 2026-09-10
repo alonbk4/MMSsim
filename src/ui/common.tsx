@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { EVIDENCE } from '../engine/resources';
+import { evidenceMeta } from '../engine/resources';
 import type { EvidenceTier, SystemCategory } from '../engine/types';
 
 /* ------------------------------ numbers ------------------------------ */
@@ -32,9 +32,9 @@ export function pct(n: number): string {
 /* ------------------------------ badges ------------------------------ */
 
 export function EvidenceBadge({ tier, title }: { tier: EvidenceTier; title?: string }) {
-  const meta = EVIDENCE[tier];
+  const meta = evidenceMeta(tier);
   return (
-    <span className={`evidence ${tier}`} title={title ?? meta.blurb}>
+    <span className={`evidence ${meta.tier}`} title={title ?? meta.blurb}>
       <span className="dot" aria-hidden="true" />
       {meta.label}
     </span>

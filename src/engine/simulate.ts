@@ -1,7 +1,7 @@
 import { CATALOG_BY_ID } from './catalog';
 import { buildDrivers, DAYS_IN_MONTH, type DriverSeries } from './climate';
 import { planFootprint } from './footprint';
-import { EVIDENCE, EVIDENCE_ORDER, RESOURCES, RESOURCE_ORDER } from './resources';
+import { EVIDENCE_ORDER, evidenceMeta, RESOURCES, RESOURCE_ORDER } from './resources';
 import { sunExposure, type ExposureReport } from './shade';
 import type {
   Design, EvidenceTier, Placement, Rate, ResourceId, SeasonProfileId,
@@ -436,7 +436,7 @@ export function simulate(
         ?? design.customSystems.find((s) => s.id === placement.systemId);
       if (!base) return [];
       const def = effectiveSystem(base, design.overrides[placement.systemId]);
-      const band = EVIDENCE[def.evidence];
+      const band = evidenceMeta(def.evidence);
       // The middle case is the tier's own central estimate. A system that
       // half worked here reads as half working in the headline figure rather
       // than as a wider range around a full one.
