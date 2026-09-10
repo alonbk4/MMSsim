@@ -1,7 +1,7 @@
 import { CATALOG_BY_ID } from './catalog';
 import { buildDrivers, DAYS_IN_MONTH, type DriverSeries } from './climate';
 import { planFootprint } from './footprint';
-import { EVIDENCE, RESOURCES, RESOURCE_ORDER } from './resources';
+import { EVIDENCE, EVIDENCE_ORDER, RESOURCES, RESOURCE_ORDER } from './resources';
 import { sunExposure, type ExposureReport } from './shade';
 import type {
   Design, EvidenceTier, Placement, Rate, ResourceId, SeasonProfileId,
@@ -437,7 +437,11 @@ export function simulate(
       if (!base) return [];
       const def = effectiveSystem(base, design.overrides[placement.systemId]);
       const band = EVIDENCE[def.evidence];
-      const confidence = scenario === 'low' ? band.low : scenario === 'high' ? band.high : 1;
+      // The middle case is the tier's own central estimate. A system that
+      // half worked here reads as half working in the headline figure rather
+      // than as a wider range around a full one.
+      const confidence = scenario === 'low' ? band.low
+        : scenario === 'high' ? band.high : band.mid;
       return [{ placement, def, confidence, exposure: exposure[placement.id] ?? OPEN }];
     });
 
@@ -446,7 +450,9 @@ export function simulate(
   const high = runScenario(design, build('high'), drivers, seasons, 'high');
 
   let capital = 0, upkeep = 0, labor = 0, footprint = 0, roof = 0;
-  const evidenceMix: Record<EvidenceTier, number> = { proven: 0, researched: 0, experimental: 0 };
+  const evidenceMix = Object.fromEntries(
+    EVIDENCE_ORDER.map((t) => [t, 0]),
+  ) as Record<EvidenceTier, number>;
   for (const p of expected.placements) {
     capital += p.capital;
     upkeep += p.upkeepPerYear;
@@ -607,6 +613,16 @@ function buildWarnings(
     }
   }
 
+  for (const p of expected.placements) {
+    if (p.evidence !== 'testedFailed') continue;
+    w.push({
+      level: 'warn',
+      placementId: p.placementId,
+      title: `${p.name} failed here`,
+      detail: `It is still taking ${Math.round(p.footprintM2)} m² and ${money(p.capital)} of the design while producing almost nothing. Keep it as a record of the attempt, or take it off the plan.`,
+    });
+  }
+
   const water = expected.resources.waterIrrigation;
   if (water.capacity > 0 && water.months.some((m) => m.stockEnd <= water.capacity * 0.02)) {
     const empty = water.months.filter((m) => m.stockEnd <= water.capacity * 0.02).length;
@@ -639,6 +655,10 @@ function catalogSensitivity(design: Design, systemId: string): number {
   const def = design.customSystems.find((s) => s.id === systemId);
   if (def) return def.sunSensitivity ?? 0;
   return CATALOG_BY_ID[systemId]?.sunSensitivity ?? 0;
+}
+
+function money(n: number): string {
+  return `$${format(n)}`;
 }
 
 function format(n: number): string {

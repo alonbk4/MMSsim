@@ -1,6 +1,6 @@
 import { CLIMATE_PRESETS, DEFAULT_SITE } from './climate';
 import { ANN_ARBOR } from './data/observed/ann-arbor';
-import type { Design, Placement, SiteProfile } from './types';
+import type { Design, Placement, SiteProfile, SystemOverride } from './types';
 
 export const DESIGN_VERSION = 3;
 
@@ -79,9 +79,25 @@ export function normalizeDesign(raw: unknown): Design {
     features: Array.isArray(d.features) ? d.features : [],
     zones: Array.isArray(d.zones) ? d.zones : [],
     climates: Array.isArray(d.climates) ? d.climates : fallback.climates,
-    overrides: d.overrides && typeof d.overrides === 'object' ? d.overrides : {},
+    overrides: normalizeOverrides(d.overrides),
     customSystems: Array.isArray(d.customSystems) ? d.customSystems : [],
   };
+}
+
+/**
+ * `proven` was one tier before it was split into what actually happened when
+ * you tried it. A save that still says so means it worked.
+ */
+function normalizeOverrides(raw: unknown): Design['overrides'] {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Design['overrides'] = {};
+  for (const [id, ov] of Object.entries(raw as Record<string, SystemOverride>)) {
+    if (!ov || typeof ov !== 'object') continue;
+    out[id] = (ov.evidence as string) === 'proven'
+      ? { ...ov, evidence: 'testedSuccess' }
+      : ov;
+  }
+  return out;
 }
 
 /**

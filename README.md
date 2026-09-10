@@ -12,18 +12,36 @@ The thing that makes it different from a catalog of good ideas: **every system
 carries an evidence tier**, and the results are reported as a range across those
 tiers.
 
-| Tier | Meaning | Output band |
+| Tier | Meaning | Counted at |
 |---|---|---|
-| **Proven here** | Built and measured on *this* site. Your logs, your numbers. | ×0.9 – ×1.1 |
-| **Researched** | Well documented somewhere else, not yet verified here. | ×0.65 – ×1.35 |
-| **Unproven** | Speculative, contested, or so site-dependent that a yard-scale figure means little. | ×0.25 – ×1.6 |
+| **Unproven** | Speculative, contested, or so site-dependent a yard-scale figure means little. | ×1 (×0.25–1.6) |
+| **Researched** | Documented somewhere else, credible, not tried here. | ×1 (×0.65–1.35) |
+| **Tested — did not work** | You built it here and it failed. | ×0.05 (×0–0.15) |
+| **Tested — partly worked** | You built it here and it underperformed, or worked only some years. | ×0.65 (×0.35–0.9) |
+| **Tested — works** | Built and measured here, doing what it should. | ×1 (×0.9–1.1) |
 
-Nothing ships as *proven* — that tier means measured on your own site, which no
-default can claim for you. So the app tells you not just "this design covers 88%
-of your irrigation" but "…and only 58% if the researched and unproven parts come
-in at the bottom of their range." As you build and log things here, promote them
-and enter your real figures; the bands narrow and the answers stop being a
-literature review.
+Least certain first, so a row of them reads left to right from "somebody wrote
+this down somewhere" to "I watched it happen in my own garden".
+
+The three tested tiers are the point. A yard produces two kinds of knowledge
+and only one of them ever gets written down — recording that something *failed*
+is worth as much as recording that it worked. It stops you spending another
+spring on it, and it is the one fact no book about somebody else's garden can
+give you. A failed system stays on the plan, drained of colour, producing
+almost nothing while still charged for the money, the labour and the ground it
+took, because that is what happened.
+
+The tier moves the headline figure, not just the error bars: mark a bed as
+having half worked and its July output drops from 5.6k kcal to 3.7k. If you
+know *how far* short it fell, mark it as working and enter the measured number
+instead — the partial tier is for when you know it disappointed but not by how
+much.
+
+Nothing ships in a tested tier — those mean *you* built it, which no default can
+claim for you. So the app tells you not just "this design covers 88% of your
+irrigation" but "…and only 58% if the researched and unproven parts come in at
+the bottom of their range." As you build things here, record what happened; the
+bands narrow and the answers stop being a literature review.
 
 ## Running it
 

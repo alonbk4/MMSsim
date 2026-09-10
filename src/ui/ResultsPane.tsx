@@ -1,4 +1,6 @@
-import { EVIDENCE, EVIDENCE_ORDER, RESOURCES, RESOURCE_ORDER } from '../engine/resources';
+import {
+  EVIDENCE, EVIDENCE_ORDER, RESOURCES, RESOURCE_ORDER, TESTED_TIERS,
+} from '../engine/resources';
 import type { SimResult } from '../engine/simulate';
 import type { ResourceId } from '../engine/types';
 import { useApp, useSimulation } from '../state/store';
@@ -165,17 +167,18 @@ function EvidenceCard({ sim }: { sim: SimResult }) {
     <div className="card">
       <header><h2>How much of this is actually known</h2></header>
       <div className="stack">
-        {EVIDENCE_ORDER.map((t) => {
+        {EVIDENCE_ORDER.filter((t) => sim.evidenceMix[t] > 0).map((t) => {
           const n = sim.evidenceMix[t];
           return (
             <div key={t} className="row" style={{ alignItems: 'flex-start', gap: 10 }}>
-              <span style={{ width: 108, flex: 'none' }}><EvidenceBadge tier={t} /></span>
+              <span style={{ width: 132, flex: 'none' }}><EvidenceBadge tier={t} /></span>
               <span className="grow">
                 <span className="row" style={{ gap: 6 }}>
                   <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{n}</strong>
                   <span className="meta-line">
                     of {total} placed {total === 1 ? 'system' : 'systems'}
-                    {' · ×'}{EVIDENCE[t].low}–{EVIDENCE[t].high} output band
+                    {' · counted at ×'}{EVIDENCE[t].mid}
+                    {`, ×${EVIDENCE[t].low}–${EVIDENCE[t].high} across the range`}
                   </span>
                 </span>
                 <span className="detail card-note" style={{ fontSize: 12.5 }}>{EVIDENCE[t].blurb}</span>
@@ -183,11 +186,12 @@ function EvidenceCard({ sim }: { sim: SimResult }) {
             </div>
           );
         })}
-        {sim.evidenceMix.proven === 0 && (
+        {TESTED_TIERS.every((t) => sim.evidenceMix[t] === 0) && (
           <p className="card-note" style={{ marginBottom: 0 }}>
-            Nothing in this design is proven on your site yet. As you build and measure
-            something, promote it in the Catalog tab and enter your own numbers — the
-            bands narrow and the results stop being a literature review.
+            Nothing here has been tried on your site yet. As you build things, record
+            what happened in the Catalog tab — including the ones that failed, which
+            are the most useful thing a yard ever tells you and the one thing no book
+            about someone else's garden can.
           </p>
         )}
       </div>

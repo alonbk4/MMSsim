@@ -31,8 +31,10 @@ describe('opening a design saved by an older version', () => {
     expect(d.placements[0].systemId).toBe('annual-beds');
     expect(d.site.name).toBe('Old yard');
     // The measurements someone entered are the last thing to throw away.
-    expect(d.overrides['annual-beds'].evidence).toBe('proven');
     expect(d.overrides['annual-beds'].yieldFactor).toBe(1.3);
+    // `proven` predates the split into what actually happened when you tried
+    // it; a save that still says so means it worked.
+    expect(d.overrides['annual-beds'].evidence).toBe('testedSuccess');
   });
 
   it('supplies the fields that did not exist yet', () => {

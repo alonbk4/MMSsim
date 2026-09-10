@@ -62,30 +62,65 @@ export const RESOURCE_ORDER: ResourceId[] = [
 ];
 
 export const EVIDENCE: Record<EvidenceTier, EvidenceMeta> = {
-  proven: {
-    tier: 'proven',
-    label: 'Proven here',
+  experimental: {
+    tier: 'experimental',
+    label: 'Unproven',
+    short: 'Unproven',
     blurb:
-      'Built and measured on this site. The numbers come from your own logs, so the model treats them as near-certain.',
-    low: 0.9,
-    high: 1.1,
+      'Speculative, contested or highly site-dependent. Included so you can explore it, but never counted on: the low case assumes it barely works.',
+    low: 0.25,
+    mid: 1,
+    high: 1.6,
   },
   researched: {
     tier: 'researched',
     label: 'Researched',
+    short: 'Researched',
     blurb:
-      'Well documented somewhere else, but not yet verified in this yard. Treated as a wide estimate — real output here could be a third lower.',
+      'Well documented somewhere else, but not yet tried in this yard. Treated as a wide estimate — real output here could be a third lower.',
     low: 0.65,
+    mid: 1,
     high: 1.35,
   },
-  experimental: {
-    tier: 'experimental',
-    label: 'Unproven',
+  testedFailed: {
+    tier: 'testedFailed',
+    label: 'Tested — did not work',
+    short: 'Failed',
     blurb:
-      'Speculative, contested or highly site-dependent. Included so you can explore it, but never counted on: the low case assumes it barely works.',
-    low: 0.25,
-    high: 1.6,
+      'You built it here and it failed. Counted as producing almost nothing, while still costing the money, the labour and the ground it took — because that is what happened. Kept on the plan so the attempt is on the record and nobody spends another spring on it.',
+    low: 0,
+    mid: 0.05,
+    high: 0.15,
+  },
+  testedPartial: {
+    tier: 'testedPartial',
+    label: 'Tested — partly worked',
+    short: 'Partly',
+    blurb:
+      'You built it here and it underperformed, or only worked in some years. The central estimate drops to about two thirds of the catalog figure. If you know by how much it fell short, mark it as working and enter the measured number instead — this tier is for when you know it disappointed but not by how much.',
+    low: 0.35,
+    mid: 0.65,
+    high: 0.9,
+  },
+  testedSuccess: {
+    tier: 'testedSuccess',
+    label: 'Tested — works',
+    short: 'Works',
+    blurb:
+      'Built and measured on this site, and it does what it should. The numbers come from your own logs, so the model treats them as near-certain.',
+    low: 0.9,
+    mid: 1,
+    high: 1.1,
   },
 };
 
-export const EVIDENCE_ORDER: EvidenceTier[] = ['proven', 'researched', 'experimental'];
+/**
+ * Least certain first, so a row of these reads left to right from "somebody
+ * wrote this down somewhere" to "I watched it happen in my own garden".
+ */
+export const EVIDENCE_ORDER: EvidenceTier[] = [
+  'experimental', 'researched', 'testedFailed', 'testedPartial', 'testedSuccess',
+];
+
+/** The tiers that mean you actually built the thing. */
+export const TESTED_TIERS: EvidenceTier[] = ['testedFailed', 'testedPartial', 'testedSuccess'];

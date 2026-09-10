@@ -196,7 +196,7 @@ function SystemDetail({ def, onBack }: { def: SystemDef; onBack: () => void }) {
             <h2>Your numbers</h2>
             <span className="sub">{override ? 'edited' : 'untouched'}</span>
           </header>
-          {def.evidence === 'proven' ? (
+          {def.evidence === 'testedSuccess' ? (
             <p className="card-note">
               This one runs on your numbers. Its band is ±10% instead of the
               ±{Math.round((1 - EVIDENCE[base.evidence].low) * 100)}% the catalog
@@ -205,10 +205,9 @@ function SystemDetail({ def, onBack }: { def: SystemDef; onBack: () => void }) {
             </p>
           ) : (
             <p className="card-note">
-              Once this is built and measured here, move it to <strong>Proven here</strong> and
-              put your own figures in. That narrows its uncertainty band from
-              ±{Math.round((1 - EVIDENCE[def.evidence].low) * 100)}% to ±10%, and every
-              result in the app stops leaning on someone else's yard.
+              Once you have actually tried this here, say what happened. Every result
+              in the app stops leaning on someone else's yard — including, and
+              especially, when the answer is that it did not work.
             </p>
           )}
 
@@ -216,14 +215,18 @@ function SystemDetail({ def, onBack }: { def: SystemDef; onBack: () => void }) {
             {EVIDENCE_ORDER.map((t) => (
               <button
                 key={t}
-                className="chip"
+                className={`chip evidence-pick ${t}`}
                 aria-pressed={def.evidence === t}
+                title={EVIDENCE[t].blurb}
                 onClick={() => setOverride(def.id, { evidence: t })}
               >
                 {EVIDENCE[t].label}
               </button>
             ))}
           </div>
+          <p className="meta-line" style={{ marginTop: 6 }}>
+            {EVIDENCE[def.evidence].blurb}
+          </p>
 
           {!editing && (
             <button className="btn small" style={{ marginTop: 10 }} onClick={() => setEditing(true)}>

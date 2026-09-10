@@ -42,21 +42,41 @@ export interface ResourceMeta {
 }
 
 /**
- * Confidence tiers. This is the whole point of the app for a yard where some
- * systems are built and measured and others are just plausible reading.
+ * Confidence tiers, ordered from knowing least to knowing most.
  *
- * - `proven`       you have run it here and the numbers come from your site
- * - `researched`   documented elsewhere, credible, not yet verified here
- * - `experimental` speculative or contested; shown, but never counted as fact
+ * - `experimental`  speculative or contested; shown, never counted as fact
+ * - `researched`    documented elsewhere, credible, not verified here
+ * - `testedFailed`  you tried it here and it did not work
+ * - `testedPartial` you tried it here and it half worked
+ * - `testedSuccess` you tried it here and it works
+ *
+ * The three tested tiers are the point of the whole app. A yard produces two
+ * kinds of knowledge and only one of them ever gets written down: what worked.
+ * Recording a failure is worth as much — it stops you spending another spring
+ * on it, and it is the one fact no book about somebody else's garden can
+ * give you.
  */
-export type EvidenceTier = 'proven' | 'researched' | 'experimental';
+export type EvidenceTier =
+  | 'experimental'
+  | 'researched'
+  | 'testedFailed'
+  | 'testedPartial'
+  | 'testedSuccess';
 
 export interface EvidenceMeta {
   tier: EvidenceTier;
   label: string;
+  /** A word or two for a chip, where the full label will not fit. */
+  short: string;
   blurb: string;
-  /** Multiplicative uncertainty band applied to this system's outputs. */
+  /**
+   * Multiplicative band applied to this system's outputs. `mid` is the central
+   * estimate, not always 1: a system that half worked here should show as half
+   * working in the headline figure, not merely as a wider range around a full
+   * one.
+   */
   low: number;
+  mid: number;
   high: number;
 }
 

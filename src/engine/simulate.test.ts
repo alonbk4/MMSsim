@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CATALOG_BY_ID } from './catalog';
 import { applyLatitude, buildDrivers, CLIMATE_PRESETS, DAYS_IN_MONTH, DEFAULT_SITE, siteFromPreset } from './climate';
 import { createDefaultDesign, emptyDesign, makePlacement } from './defaults';
-import { RESOURCE_ORDER } from './resources';
+import { EVIDENCE, EVIDENCE_ORDER, RESOURCE_ORDER, TESTED_TIERS } from './resources';
 import { simulate } from './simulate';
 import type { Design } from './types';
 
@@ -204,9 +204,9 @@ describe('evidence tiers', () => {
 
   it('promotes a system to proven when the user overrides it', () => {
     const design = designWith(makePlacement('annual-beds', 50, 0, 0));
-    design.overrides['annual-beds'] = { evidence: 'proven', yieldFactor: 1.4 };
+    design.overrides['annual-beds'] = { evidence: 'testedSuccess', yieldFactor: 1.4 };
     const res = simulate(design, CATALOG_BY_ID);
-    expect(res.expected.placements[0].evidence).toBe('proven');
+    expect(res.expected.placements[0].evidence).toBe('testedSuccess');
     const spread = res.high.resources.foodCalories.produced / res.low.resources.foodCalories.produced;
     expect(spread).toBeLessThan(1.3);
   });
@@ -266,9 +266,62 @@ describe('catalog integrity', () => {
     }
   });
 
-  it('ships nothing as proven — proven means measured on your own site', () => {
+  it('ships nothing as tested — that tier means you built it yourself', () => {
     for (const s of Object.values(CATALOG_BY_ID)) {
-      expect(s.evidence).not.toBe('proven');
+      expect(TESTED_TIERS).not.toContain(s.evidence);
     }
+  });
+});
+
+describe('what happened when you tried it', () => {
+  const bedsWith = (evidence: string) => {
+    const design = designWith(makePlacement('annual-beds', 50, 0, 0));
+    design.overrides['annual-beds'] = { evidence: evidence as never };
+    return simulate(design, CATALOG_BY_ID);
+  };
+  const food = (r: ReturnType<typeof simulate>) => r.expected.resources.foodCalories.produced;
+
+  it('ranks the tiers from least to most certain', () => {
+    expect(EVIDENCE_ORDER).toEqual([
+      'experimental', 'researched', 'testedFailed', 'testedPartial', 'testedSuccess',
+    ]);
+    // Each step narrows the range, apart from the tested tiers which are
+    // narrow because you watched what happened.
+    const width = (t: string) => EVIDENCE[t as never].high - EVIDENCE[t as never].low;
+    expect(width('experimental')).toBeGreaterThan(width('researched'));
+    expect(width('researched')).toBeGreaterThan(width('testedSuccess'));
+  });
+
+  it('moves the headline number, not just the range', () => {
+    // This was the flaw in the single `proven` tier: the middle case ignored
+    // it entirely, so recording an outcome changed nothing you would notice.
+    expect(food(bedsWith('testedPartial'))).toBeLessThan(food(bedsWith('testedSuccess')));
+    expect(food(bedsWith('testedFailed'))).toBeLessThan(food(bedsWith('testedPartial')));
+  });
+
+  it('counts a failure as producing next to nothing', () => {
+    const failed = food(bedsWith('testedFailed'));
+    const works = food(bedsWith('testedSuccess'));
+    expect(failed).toBeLessThan(works * 0.1);
+    expect(failed).toBeGreaterThanOrEqual(0);
+  });
+
+  it('still charges for a failure — the money and the ground are spent', () => {
+    const res = bedsWith('testedFailed');
+    expect(res.totals.capital).toBeGreaterThan(0);
+    expect(res.totals.footprintM2).toBeGreaterThan(0);
+    expect(res.totals.laborHoursPerYear).toBeGreaterThan(0);
+  });
+
+  it('says so in the results rather than leaving it on the plan quietly', () => {
+    const res = bedsWith('testedFailed');
+    expect(res.warnings.some((w) => /failed here/i.test(w.title))).toBe(true);
+  });
+
+  it('leaves a researched system where it was', () => {
+    // Splitting the tested tier must not have moved anything else.
+    const before = food(bedsWith('researched'));
+    const plain = food(simulate(designWith(makePlacement('annual-beds', 50, 0, 0)), CATALOG_BY_ID));
+    expect(before).toBeCloseTo(plain, 6);
   });
 });

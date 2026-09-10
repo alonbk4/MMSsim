@@ -71,8 +71,13 @@ export function paintIllustrated({ def, fp, scale, seed }: PaintArgs): ReactNode
   // blur together. Each system gets a small fixed step toward its category's
   // lighter tone, so neighbours separate without leaving the palette.
   const step = (hash(def.id) % 5) * 5.5;
-  const fill = `color-mix(in oklab, var(--cat-fill) ${100 - step}%, var(--cat-lift))`;
-  const lift = 'var(--cat-lift)';
+  // Something you tried that failed is drained of its colour on the plan, so a
+  // yard full of green does not quietly include the bed that never took.
+  const failed = def.evidence === 'testedFailed';
+  const fill = failed
+    ? 'var(--surface-2)'
+    : `color-mix(in oklab, var(--cat-fill) ${100 - step}%, var(--cat-lift))`;
+  const lift = failed ? 'var(--surface-1)' : 'var(--cat-lift)';
   const detail = scale > 7;
   const r = (v: number) => Math.min(0.45, v * 0.16);
 

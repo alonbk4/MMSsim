@@ -304,10 +304,70 @@ textarea {
   white-space: nowrap;
 }
 .evidence .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
-.evidence.proven { color: var(--success-text); border-color: color-mix(in oklab, var(--success-text) 45%, transparent); background: color-mix(in oklab, var(--success-text) 10%, transparent); }
-.evidence.researched { color: var(--series-1); border-color: color-mix(in oklab, var(--series-1) 45%, transparent); background: color-mix(in oklab, var(--series-1) 10%, transparent); }
-.evidence.experimental { color: var(--text-secondary); border-color: var(--border-strong); border-style: dashed; background: none; }
-.evidence.experimental .dot { background: var(--status-warning); }
+/*
+ * Five tiers, ordered from least to most certain. Colour carries the outcome —
+ * green worked, amber half worked, red failed — but never alone: every badge
+ * ships its label, because a red dot on its own does not say whether the thing
+ * is dangerous or simply disappointing.
+ */
+.evidence.testedSuccess {
+  color: var(--success-text);
+  border-color: color-mix(in oklab, var(--success-text) 45%, transparent);
+  background: color-mix(in oklab, var(--success-text) 10%, transparent);
+}
+.evidence.testedPartial {
+  color: #8a5a00;
+  border-color: color-mix(in oklab, var(--status-warning) 55%, transparent);
+  background: color-mix(in oklab, var(--status-warning) 14%, transparent);
+}
+.evidence.testedPartial .dot { background: var(--status-warning); }
+.evidence.testedFailed {
+  color: var(--status-critical);
+  border-color: color-mix(in oklab, var(--status-critical) 45%, transparent);
+  background: color-mix(in oklab, var(--status-critical) 10%, transparent);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+.evidence.testedFailed .dot { background: var(--status-critical); text-decoration: none; }
+.evidence.researched {
+  color: var(--series-1);
+  border-color: color-mix(in oklab, var(--series-1) 45%, transparent);
+  background: color-mix(in oklab, var(--series-1) 10%, transparent);
+}
+.evidence.experimental {
+  color: var(--text-secondary);
+  border-color: var(--border-strong);
+  border-style: dashed;
+  background: none;
+}
+.evidence.experimental .dot { background: var(--text-muted); }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .evidence.testedPartial { color: #e0a95e; }
+}
+:root[data-theme="dark"] .evidence.testedPartial { color: #e0a95e; }
+
+/* The tier picker in the catalog, tinted so the row reads as a scale. */
+.chip.evidence-pick[aria-pressed="true"].testedSuccess {
+  background: color-mix(in oklab, var(--success-text) 16%, transparent);
+  border-color: var(--success-text); color: var(--success-text);
+}
+.chip.evidence-pick[aria-pressed="true"].testedPartial {
+  background: color-mix(in oklab, var(--status-warning) 20%, transparent);
+  border-color: var(--status-warning); color: #8a5a00;
+}
+.chip.evidence-pick[aria-pressed="true"].testedFailed {
+  background: color-mix(in oklab, var(--status-critical) 14%, transparent);
+  border-color: var(--status-critical); color: var(--status-critical);
+}
+.chip.evidence-pick[aria-pressed="true"].researched {
+  background: color-mix(in oklab, var(--series-1) 14%, transparent);
+  border-color: var(--series-1); color: var(--series-1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .chip.evidence-pick[aria-pressed="true"].testedPartial { color: #e0a95e; }
+}
+:root[data-theme="dark"] .chip.evidence-pick[aria-pressed="true"].testedPartial { color: #e0a95e; }
 
 /* ------------------------------ canvas ------------------------------ */
 
