@@ -13,25 +13,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$p  = function ( $text ) {
-	return "<!-- wp:paragraph -->\n<p>{$text}</p>\n<!-- /wp:paragraph -->\n\n";
-};
-$h  = function ( $text, $level = 2 ) {
-	$attrs = 2 === $level ? '' : ' {"level":' . $level . '}';
-	return "<!-- wp:heading{$attrs} -->\n<h{$level} class=\"wp-block-heading\">{$text}</h{$level}>\n<!-- /wp:heading -->\n\n";
-};
-$ul = function ( array $items, $ordered = false ) {
-	$tag   = $ordered ? 'ol' : 'ul';
-	$attrs = $ordered ? ' {"ordered":true}' : '';
-	$lis   = '';
-	foreach ( $items as $item ) {
-		$lis .= "<!-- wp:list-item -->\n<li>{$item}</li>\n<!-- /wp:list-item -->";
-	}
-	return "<!-- wp:list{$attrs} -->\n<{$tag} class=\"wp-block-list\">{$lis}</{$tag}>\n<!-- /wp:list -->\n\n";
-};
-$you = function ( $prompt ) {
-	return "[[YOU: {$prompt}]]";
-};
+list( $p, $h, $ul, $you ) = require __DIR__ . '/markup.php';
 
 return array(
 

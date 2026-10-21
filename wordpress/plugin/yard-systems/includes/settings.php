@@ -63,7 +63,7 @@ function yard_systems_settings_page() {
 
 		<hr />
 		<h2><?php esc_html_e( 'Starter content', 'yard-systems' ); ?></h2>
-		<p><?php esc_html_e( 'Creates the pages, the system categories and the systems with what is known about this yard so far, sets the home page and the menu. Safe to run again: it only adds what is missing and never overwrites an edit.', 'yard-systems' ); ?></p>
+		<p><?php esc_html_e( 'Creates the pages, the systems with what is known about this yard so far, and the first journal articles as drafts, and sets the home page. Safe to run again: it only adds what is missing and never overwrites an edit.', 'yard-systems' ); ?></p>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="yard_systems_starter" />
 			<?php wp_nonce_field( 'yard_systems_starter' ); ?>

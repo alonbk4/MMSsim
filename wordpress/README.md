@@ -33,9 +33,16 @@ No nonce on the form, because page caching would serve an expired one; spam is
 stopped by a honeypot, a seconds-on-page check and a rate limit. Anything that
 looks automated is saved marked `[check]` and not emailed.
 
-**Local search.** The home page tells search engines this is a service-area
-business and lists the towns from *Settings → Yard site*. No street address is
-published anywhere.
+**Local search and link previews.** The home page tells search engines this
+is a service-area business and lists the towns from *Settings → Yard site*.
+No street address is published anywhere. Every page carries a meta
+description and link-preview tags, so a page shared on Facebook, Nextdoor or
+in a text shows a title, a line and a picture. These step aside when an SEO
+plugin is active, so nothing is printed twice.
+
+**Journal.** Six first articles, written from the yard's own record, install
+as drafts: they are in your voice, so nothing is published under your name
+until you have read it.
 
 ## Deploying
 
@@ -64,18 +71,6 @@ Upload, activate both, then *Settings → Yard site → Install starter content*
 
 ## Before it goes live
 
-- **Fill in the `[[YOU: …]]` placeholders.** The dashboard lists every
-  published page that still has one.
-- **Name it.** Settings → General → Site Title. It is the temporary domain
-  until you do, and it appears in every page title and in search results.
-- **Photos.** Set a featured image on each system. A menu of systems with no
-  pictures of the real thing will not convince anyone.
-- **Check the costs.** The materials figures come from the simulator's
-  catalog estimates, not from receipts.
-- **Publish the drafts that are real.** Seven systems from the yard's list are
-  drafts because nothing records how they have done here. Set the tier and
-  publish the ones that are running.
-- **Delete "Hello world!"**, WordPress's sample post, which otherwise shows
-  on the home page.
-- **Send a test inquiry**, and check it arrives by email as well as under
-  Inquiries.
+Everything only you can supply — the name, prices, your story, the drafts to
+check, and a photo shot list — is in [`FILL-IN.md`](FILL-IN.md). Then send a
+test inquiry and check it arrives by email as well as under Inquiries.

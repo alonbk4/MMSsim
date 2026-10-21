@@ -11,6 +11,17 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
+ * Whether a starter item already exists, in any status.
+ *
+ * Not get_posts( 'name' => … ): a query by slug counts as a single-post view,
+ * and WordPress empties those of drafts for anyone who cannot edit them — so
+ * run without an admin, every draft would look missing and be created again.
+ */
+function yard_systems_starter_exists( $slug, $post_type ) {
+	return null !== get_page_by_path( $slug, OBJECT, $post_type );
+}
+
+/**
  * @return int Number of items created.
  */
 function yard_systems_install_starter() {
@@ -50,16 +61,7 @@ function yard_systems_install_starter() {
 	}
 
 	foreach ( $content['systems'] as $order => $system ) {
-		$found = get_posts(
-			array(
-				'post_type'      => 'yard_system',
-				'name'           => $system['slug'],
-				'post_status'    => 'any',
-				'posts_per_page' => 1,
-				'fields'         => 'ids',
-			)
-		);
-		if ( $found ) {
+		if ( yard_systems_starter_exists( $system['slug'], 'yard_system' ) ) {
 			continue;
 		}
 		$id = wp_insert_post(
@@ -83,6 +85,35 @@ function yard_systems_install_starter() {
 		foreach ( $system['facts'] as $key => $value ) {
 			update_post_meta( $id, $key, $value );
 		}
+	}
+
+	// Journal articles go in as drafts: they speak in the owner's voice, so
+	// nothing is published under their name until they have read it.
+	$journal = require YARD_SYSTEMS_DIR . 'starter/posts.php';
+	foreach ( $journal['categories'] as $slug => $name ) {
+		if ( ! term_exists( $slug, 'category' ) ) {
+			$result = wp_insert_term( $name, 'category', array( 'slug' => $slug ) );
+			$created += is_wp_error( $result ) ? 0 : 1;
+		}
+	}
+	foreach ( $journal['posts'] as $post ) {
+		if ( yard_systems_starter_exists( $post['slug'], 'post' ) ) {
+			continue;
+		}
+		$term = get_term_by( 'slug', $post['category'], 'category' );
+		$id   = wp_insert_post(
+			array(
+				'post_type'     => 'post',
+				'post_status'   => 'draft',
+				'post_name'     => $post['slug'],
+				'post_title'    => $post['title'],
+				'post_excerpt'  => $post['excerpt'],
+				'post_content'  => $post['content'],
+				'post_category' => $term ? array( $term->term_id ) : array(),
+			),
+			true
+		);
+		$created += is_wp_error( $id ) ? 0 : 1;
 	}
 
 	// Site settings, each only when still at WordPress's own default.
@@ -112,6 +143,6 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			$created = yard_systems_install_starter();
 			WP_CLI::success( sprintf( 'Starter content: %d new items; existing ones left alone.', $created ) );
 		},
-		array( 'shortdesc' => 'Create any missing starter pages, categories and systems.' )
+		array( 'shortdesc' => 'Create any missing starter pages, systems, categories and draft articles.' )
 	);
 }
