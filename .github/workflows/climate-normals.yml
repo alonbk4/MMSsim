@@ -2,17 +2,18 @@
 #
 # The data host is not reachable from where this app is developed, so the
 # fetching runs here instead and the result is committed back to the branch it
-# was started from. Run it from the Actions tab ("Run workflow"); "probe"
-# prints one raw response without writing anything.
+# was started from. Run it from the Actions tab ("Run workflow"): "build"
+# refetches every cell, "missing" fetches only cells the table lacks (after a
+# rate-limited run), and "probe" prints one raw response without writing.
 name: Build offline weather averages
 
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: probe prints one raw response; build regenerates the table
+        description: build refetches everything; missing fills gaps; probe prints one response
         type: choice
-        options: [build, probe]
+        options: [build, missing, probe]
         default: build
 
 permissions:
@@ -34,10 +35,10 @@ jobs:
           node-version: 22
 
       - name: Fetch and average
-        run: node scripts/build-climate-normals.mjs ${{ inputs.mode == 'probe' && '--probe' || '' }}
+        run: node scripts/build-climate-normals.mjs --${{ inputs.mode }}
 
       - name: Commit the table
-        if: inputs.mode == 'build'
+        if: inputs.mode != 'probe'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

@@ -25,8 +25,9 @@
  * 11–13, 21–25, 37–39, 43) — the same definition as the ERA5 record the app
  * ships for Ann Arbor, which it is checked against at the end.
  *
- * Run with:  node scripts/build-climate-normals.mjs           (writes the table)
- *            node scripts/build-climate-normals.mjs --probe   (one raw response)
+ * Run with:  node scripts/build-climate-normals.mjs             (refetch every cell)
+ *            node scripts/build-climate-normals.mjs --missing   (only cells not in the table)
+ *            node scripts/build-climate-normals.mjs --probe     (one raw response)
  * Normally run by .github/workflows/climate-normals.yml.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -40,7 +41,8 @@ const MID_DOY = [17, 47, 75, 105, 135, 162, 198, 228, 258, 288, 318, 344];
 
 const TO_YEAR = Number(process.env.CLIMATE_TO_YEAR) || new Date().getUTCFullYear() - 1;
 const FROM_YEAR = Number(process.env.CLIMATE_FROM_YEAR) || TO_YEAR - 14;
-const CONCURRENCY = 4;
+// POWER rate-limits by client: four at once tripped it after ~950 requests.
+const CONCURRENCY = 2;
 
 /* MERRA-2's grid: 0.5° of latitude by 0.625° of longitude, centred on whole
    multiples of each from -90 / -180. */
@@ -62,17 +64,37 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function fetchCell(lat, lon) {
   let wait = 2000;
   for (let attempt = 1; ; attempt++) {
+    let status = 0;
     try {
       const res = await fetch(url(lat, lon), { signal: AbortSignal.timeout(60000) });
       if (res.ok) return await res.json();
-      if (attempt >= 6 || (res.status < 500 && res.status !== 429)) {
-        throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+      status = res.status;
+      if (attempt >= 8 || (status < 500 && status !== 429)) {
+        throw new Error(`HTTP ${status}: ${(await res.text()).slice(0, 120)}`);
       }
     } catch (e) {
-      if (attempt >= 6) throw e;
+      if (attempt >= 8 || (status && status < 500 && status !== 429)) throw e;
     }
-    await sleep(wait);
-    wait *= 2;
+    // Being told to slow down deserves a real pause, not a quick retry.
+    await sleep(status === 429 ? Math.max(wait, 20000) : wait);
+    wait = Math.min(wait * 2, 300000);
+  }
+}
+
+/** Rows from the table already in the repo, so a cell that fails this time
+ *  keeps last time's numbers instead of leaving a hole. */
+function previousRows() {
+  try {
+    const src = readFileSync(new URL('../src/engine/data/climate-normals.ts', import.meta.url), 'utf8');
+    if (!src.includes(`NORMALS_YEARS: [number, number] = [${FROM_YEAR}, ${TO_YEAR}]`)) return new Map();
+    const rows = new Map();
+    for (const line of src.split('\n')) {
+      const v = line.trim().split(' ');
+      if (v.length === 51) rows.set(`${Number(v[0])},${Number(v[1])}`, line.trim());
+    }
+    return rows;
+  } catch {
+    return new Map();
   }
 }
 
@@ -159,42 +181,68 @@ const fmt = (v) => Number(v.toFixed(3)).toString();
 
 async function build() {
   const cells = zipCells();
-  console.log(`${cells.length} grid cells for ${FROM_YEAR}–${TO_YEAR}`);
-  const rows = new Array(cells.length);
-  const failed = [];
-  let next = 0;
-  let done = 0;
-
-  const worker = async () => {
-    while (next < cells.length) {
-      const i = next++;
-      const [lat, lon] = cells[i];
-      try {
-        rows[i] = summarise(await fetchCell(lat, lon), lat, lon);
-      } catch (e) {
-        failed.push(`${lat},${lon}: ${e.message}`);
-      }
-      done++;
-      if (done % 100 === 0) console.log(`  ${done}/${cells.length}`);
-    }
-  };
-  await Promise.all(Array.from({ length: CONCURRENCY }, worker));
-
-  if (failed.length) console.log(`${failed.length} cells failed:\n  ${failed.join('\n  ')}`);
-  const good = rows.filter(Boolean);
-  if (good.length < cells.length * 0.97) {
-    throw new Error(`Only ${good.length} of ${cells.length} cells came back — not writing a table with holes in it.`);
-  }
+  const previous = previousRows();
+  const onlyMissing = process.argv.includes('--missing');
+  console.log(`${cells.length} grid cells for ${FROM_YEAR}–${TO_YEAR}, ${previous.size} already in the table`);
 
   // Integer-ish encoding keeps the table small: tenths of a degree, whole
   // millimetres, hundredths of a sun hour.
-  const lines = good.map((r) => [
+  const encode = (r) => [
     fmt(r.lat), fmt(r.lon), r.elevation,
     ...r.meanTempC.map((v) => Math.round(v * 10)),
     ...r.rainfallMm.map((v) => Math.round(v)),
     ...r.etoMm.map((v) => Math.round(v)),
     ...r.peakSunHours.map((v) => Math.round(v * 100)),
-  ].join(' '));
+  ].join(' ');
+
+  const lines = new Array(cells.length);
+  const fresh = [];
+  const todo = [];
+  cells.forEach(([lat, lon], i) => {
+    const old = previous.get(`${lat},${lon}`);
+    if (onlyMissing && old) lines[i] = old;
+    else todo.push(i);
+  });
+
+  const runPass = async (indices) => {
+    const failed = [];
+    let next = 0;
+    let done = 0;
+    const worker = async () => {
+      while (next < indices.length) {
+        const i = indices[next++];
+        const [lat, lon] = cells[i];
+        try {
+          const r = summarise(await fetchCell(lat, lon), lat, lon);
+          lines[i] = encode(r);
+          fresh.push(r);
+        } catch (e) {
+          failed.push(i);
+          console.log(`  ${lat},${lon}: ${e.message}`);
+        }
+        if (++done % 100 === 0) console.log(`  ${done}/${indices.length}`);
+      }
+    };
+    await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+    return failed;
+  };
+
+  let failed = await runPass(todo);
+  if (failed.length) {
+    console.log(`${failed.length} failed; one more pass after a minute's rest`);
+    await sleep(60000);
+    failed = await runPass(failed);
+  }
+  let kept = 0;
+  for (const i of failed) {
+    const old = previous.get(`${cells[i][0]},${cells[i][1]}`);
+    if (old) { lines[i] = old; kept++; }
+  }
+  const good = lines.filter(Boolean);
+  console.log(`${fresh.length} fetched, ${good.length - fresh.length - kept} carried over unchanged, ${kept} kept from last time after failing, ${cells.length - good.length} missing`);
+  if (good.length < cells.length * 0.97) {
+    throw new Error(`Only ${good.length} of ${cells.length} cells — not writing a table with holes in it.`);
+  }
 
   const built = new Date().toISOString().slice(0, 10);
   const out = `// GENERATED FILE — do not edit by hand.
@@ -216,14 +264,14 @@ async function build() {
 export const NORMALS_YEARS: [number, number] = [${FROM_YEAR}, ${TO_YEAR}];
 export const NORMALS_BUILT = '${built}';
 export const NORMALS_TABLE = \`
-${lines.join('\n')}
+${good.join('\n')}
 \`;
 `;
   writeFileSync(new URL('../src/engine/data/climate-normals.ts', import.meta.url), out);
   console.log(`wrote ${good.length} cells, ${(out.length / 1024).toFixed(0)} KB`);
 
   // The check that matters: the ERA5 record already shipped for Ann Arbor.
-  const aa = good.find((r) => r.lat === snapLat(42.27) && r.lon === snapLon(-83.73));
+  const aa = fresh.find((r) => r.lat === 42 && r.lon === -83.75);
   if (aa) {
     const sum = (xs) => xs.reduce((a, b) => a + b, 0).toFixed(0);
     console.log('Ann Arbor cell vs shipped ERA5 2010–2024 (rain 915, ET0 949 mm/yr):');
