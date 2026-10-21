@@ -1,0 +1,50 @@
+# Regenerates the bundled offline weather averages.
+#
+# The data host is not reachable from where this app is developed, so the
+# fetching runs here instead and the result is committed back to the branch it
+# was started from. Run it from the Actions tab ("Run workflow"); "probe"
+# prints one raw response without writing anything.
+name: Build offline weather averages
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: probe prints one raw response; build regenerates the table
+        type: choice
+        options: [build, probe]
+        default: build
+
+permissions:
+  contents: write
+
+concurrency:
+  group: climate-normals
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Fetch and average
+        run: node scripts/build-climate-normals.mjs ${{ inputs.mode == 'probe' && '--probe' || '' }}
+
+      - name: Commit the table
+        if: inputs.mode == 'build'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/engine/data/climate-normals.ts
+          if git diff --cached --quiet; then
+            echo "No change to the table."
+          else
+            git commit -m "Regenerate offline weather averages"
+            git push
+          fi
