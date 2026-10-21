@@ -63,6 +63,13 @@ const G: Record<string, ReactNode> = {
   tower: <><path d="M9 21h6" /><path d="M12 21V4" /><path d="M12 7c-3 0-4.5-1.6-4.5-4C10 3 12 4.4 12 7z" /><path d="M12 12c3 0 4.5-1.6 4.5-4C14 8 12 9.4 12 12z" /><path d="M12 17c-3 0-4.5-1.6-4.5-4C10 13 12 14.4 12 17z" /><path d="M4 3h3M17 3h3" /></>,
   recycler: <><rect x="4" y="7" width="16" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M9 12.5a3.2 3.2 0 0 1 5.6-1.6" /><path d="M14.6 9.4v1.8h-1.8" /><path d="M15 15a3.2 3.2 0 0 1-5.6 1.6" /><path d="M9.4 18v-1.8h1.8" /></>,
   flush: <><path d="M9 3h6v7l3 4v7H6v-7l3-4z" /><path d="M6 17h12" /><circle cx="12" cy="20" r="1.2" /></>,
+  hangbag: <><path d="M3 3h18" /><path d="M9 3 8 7M15 3l1 4" /><path d="M7 7h10l-1.5 9h-7z" /><path d="M12 16v2.5" /><path d="M12 18.5c-2 0-3.2 1-3.5 2.5M12 18.5c2 0 3.2 1 3.5 2.5" /></>,
+  pump: <><rect x="3" y="11" width="8" height="9" rx="1.2" /><path d="M7 11V7h13" /><path d="M14 7v3M17 7v3M20 7v3" /><circle cx="7" cy="15.5" r="1.6" /></>,
+  brew: <><path d="M5 9h14l-1.6 11H6.6z" /><path d="M12 9V4M10 4h4" /><circle cx="10" cy="15" r="1" /><circle cx="14" cy="13" r="1.2" /><circle cx="12.5" cy="17.4" r=".9" /></>,
+  nettle: <><path d="M12 21V8" /><path d="M12 8C8.5 7.4 6.6 5 6.4 2.6 9.6 2.8 11.8 4.8 12 8z" /><path d="M12 14c3.5-.6 5.4-3 5.6-5.4-3.2.2-5.4 2.2-5.6 5.4z" /><path d="M8 5.4 7 6M10 7l-.8.8M16 11.4l1 .6M14 12.6l.9.7" /></>,
+  jar: <><path d="M8 3h8v2.4l1.2 2.2V19a2 2 0 0 1-2 2H8.8a2 2 0 0 1-2-2V7.6L8 5.4z" /><path d="M8 5.4h8" /><path d="M9.6 17c2.2-.6 3.8-2.8 4.4-5.6" /></>,
+  firepit: <><ellipse cx="12" cy="17.5" rx="8" ry="3" /><path d="M12 14.6c-2.2-1.4-2.8-3.6-1.2-6.4.4 1.6 1.3 2.2 2.1 2.6.2-1.6 1-2.8 2-3.6.4 2.8 1.2 5-.9 7.4" /></>,
+  jug: <><path d="M9 3h5v3l3 3v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9l2-3z" /><path d="M17 11h1.4a1.6 1.6 0 0 1 0 3.2H17" /><path d="M7 14h10" /></>,
 
   /* ---- sanitation / soil ---- */
   toilet: <><path d="M6 4h11l-1 7H7z" /><path d="M7 11c-1 4 0 6.6 5 9 5-2.4 6-5 5-9" /></>,
@@ -138,6 +145,13 @@ const BY_SYSTEM: Record<string, string> = {
   'indoor-hydroponic-tower': 'tower',
   'biochar-tote': 'bucket',
   'food-recycler': 'recycler',
+  'upside-down-planters': 'hangbag',
+  'pump-drip-kit': 'pump',
+  'worm-tea-brewer': 'brew',
+  'nettle-patch': 'nettle',
+  'banana-peel-tea': 'jar',
+  'wood-ash': 'firepit',
+  'urine-feed': 'jug',
 
   'composting-toilet': 'toilet',
   'humanure-system': 'bucket',

@@ -119,6 +119,13 @@ const ARCHETYPES: Record<string, Archetype> = {
   'indoor-hydroponic-tower': { kind: 'disc' },
   'biochar-tote': { kind: 'cells', per: 0.6 },
   'food-recycler': { kind: 'block', aspect: 1.3 },
+  'upside-down-planters': { kind: 'band', thickness: 0.45 },
+  'pump-drip-kit': { kind: 'block', aspect: 1.5 },
+  'worm-tea-brewer': { kind: 'disc' },
+  'nettle-patch': { kind: 'blob' },
+  'banana-peel-tea': { kind: 'disc' },
+  'wood-ash': { kind: 'disc' },
+  'urine-feed': { kind: 'disc' },
 
   // Sanitation
   'composting-toilet': { kind: 'block', aspect: 1.2 },
