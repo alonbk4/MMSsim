@@ -3,7 +3,32 @@ import { isEvidenceTier } from './resources';
 import { ANN_ARBOR } from './data/observed/ann-arbor';
 import type { Design, Placement, SiteProfile, SystemOverride } from './types';
 
-export const DESIGN_VERSION = 3;
+export const DESIGN_VERSION = 4;
+
+/**
+ * What has actually been tried in this yard, and how it went.
+ *
+ * The catalog never ships a tested tier — that would be claiming someone
+ * else's result — so the yard's own record lives here, as the overrides the
+ * starting design carries. Each entry was reported from the yard itself:
+ *
+ * - Aerobin: loaded mid-August 2026 with shredded leaves, cardboard cores,
+ *   food-recycler output and diluted urine; 130 °F within five days, held
+ *   about a week, then 120 °F, and back to 125 °F a day after reloading.
+ * - Biochar: a batch made in August 2026, crushed and charged in a 27-gallon
+ *   tote with diluted urine and aquaponics water, then worked into the Aerobin.
+ *
+ * Designs saved before this list existed get it once, on upgrade, and only
+ * for systems the user has not already given a tier of their own.
+ */
+export const YARD_RESULTS: Record<string, SystemOverride> = {
+  aerobin: { evidence: 'testedSuccess' },
+  'biochar-kiln': { evidence: 'testedSuccess' },
+  'biochar-tote': { evidence: 'testedSuccess' },
+};
+
+const yardResults = (): Design['overrides'] =>
+  Object.fromEntries(Object.entries(YARD_RESULTS).map(([id, ov]) => [id, { ...ov }]));
 
 let seq = 0;
 export function newId(prefix = 'p'): string {
@@ -43,7 +68,7 @@ export function createDefaultDesign(): Design {
       },
     ],
     zones: [],
-    overrides: {},
+    overrides: yardResults(),
     customSystems: [],
     climates: [{ id: 'c_ann_arbor', name: 'Ann Arbor, MI', ...ANN_ARBOR }],
   };
@@ -67,6 +92,14 @@ export function normalizeDesign(raw: unknown): Design {
   const d = raw as Partial<Design> & Record<string, unknown>;
   if (!Array.isArray(d.placements)) return fallback;
 
+  const overrides = normalizeOverrides(d.overrides);
+  const storedVersion = typeof d.version === 'number' ? d.version : 0;
+  if (storedVersion < 4) {
+    for (const [id, ov] of Object.entries(YARD_RESULTS)) {
+      if (!overrides[id]?.evidence) overrides[id] = { ...overrides[id], ...ov };
+    }
+  }
+
   return {
     version: DESIGN_VERSION,
     site: normalizeSite(d.site),
@@ -80,7 +113,7 @@ export function normalizeDesign(raw: unknown): Design {
     features: Array.isArray(d.features) ? d.features : [],
     zones: Array.isArray(d.zones) ? d.zones : [],
     climates: Array.isArray(d.climates) ? d.climates : fallback.climates,
-    overrides: normalizeOverrides(d.overrides),
+    overrides,
     customSystems: Array.isArray(d.customSystems) ? d.customSystems : [],
   };
 }

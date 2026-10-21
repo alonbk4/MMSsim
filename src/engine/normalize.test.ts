@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CLIMATE_PRESETS } from './climate';
-import { createDefaultDesign, DESIGN_VERSION, normalizeDesign } from './defaults';
+import { createDefaultDesign, DESIGN_VERSION, normalizeDesign, YARD_RESULTS } from './defaults';
 import { simulate } from './simulate';
 import { CATALOG_BY_ID } from './catalog';
 import { evidenceMeta, isEvidenceTier } from './resources';
@@ -136,5 +136,40 @@ describe('evidence values from outside', () => {
     expect(evidenceMeta('testedFailed').tier).toBe('testedFailed');
     expect(isEvidenceTier('testedFailed')).toBe(true);
     expect(isEvidenceTier('proven')).toBe(false);
+  });
+});
+
+describe("the yard's own results", () => {
+  it('ship with the starting design, not in the catalog', () => {
+    const d = createDefaultDesign();
+    expect(d.overrides.aerobin.evidence).toBe('testedSuccess');
+    expect(d.overrides['biochar-tote'].evidence).toBe('testedSuccess');
+    // The catalog entry itself still makes no claim about anyone's yard.
+    expect(CATALOG_BY_ID.aerobin.evidence).toBe('researched');
+    for (const id of Object.keys(YARD_RESULTS)) expect(CATALOG_BY_ID[id]).toBeDefined();
+  });
+
+  it('reach a design saved before they existed', () => {
+    const d = normalizeDesign({ ...legacy(), version: 3 });
+    expect(d.overrides.aerobin.evidence).toBe('testedSuccess');
+    expect(d.overrides['biochar-kiln'].evidence).toBe('testedSuccess');
+    // Without disturbing what was already there.
+    expect(d.overrides['annual-beds'].yieldFactor).toBe(1.3);
+  });
+
+  it('never overrule a tier the user set', () => {
+    const d = normalizeDesign({
+      ...legacy(),
+      version: 3,
+      overrides: { aerobin: { evidence: 'testedPartial', yieldFactor: 0.8 } },
+    });
+    expect(d.overrides.aerobin.evidence).toBe('testedPartial');
+    expect(d.overrides.aerobin.yieldFactor).toBe(0.8);
+  });
+
+  it('are applied once, so clearing one later sticks', () => {
+    const current = { ...createDefaultDesign(), overrides: {} };
+    const d = normalizeDesign(JSON.parse(JSON.stringify(current)));
+    expect(d.overrides.aerobin).toBeUndefined();
   });
 });
