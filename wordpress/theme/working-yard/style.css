@@ -1,0 +1,50 @@
+/*
+Theme Name: Working Yard
+Description: A plain, readable block theme for a yard-systems site: the story, the systems menu, the journal and the inquiry form. Pairs with the Yard Systems plugin.
+Version: 0.1.0
+Requires at least: 6.6
+Requires PHP: 7.4
+License: GNU General Public License v2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: working-yard
+*/
+
+/* Most styling is in theme.json. This is what theme.json cannot express. */
+
+a:where(:not(.wp-element-button)):focus-visible {
+	outline: 2px solid var(--wp--preset--color--accent);
+	outline-offset: 2px;
+	border-radius: 2px;
+}
+
+.wy-eyebrow {
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+
+.wy-steps {
+	counter-reset: wy-step;
+}
+.wy-steps > .wp-block-column {
+	counter-increment: wy-step;
+}
+.wy-steps > .wp-block-column::before {
+	content: counter(wy-step);
+	display: inline-grid;
+	place-items: center;
+	width: 2.2rem;
+	height: 2.2rem;
+	border-radius: 50%;
+	background: var(--wp--preset--color--accent);
+	color: var(--wp--preset--color--on-accent);
+	font-weight: 700;
+}
+
+.wy-post-card {
+	border-top: 1px solid var(--wp--preset--color--line);
+}
+
+
+.wy-plain-list {
+	list-style: none;
+}

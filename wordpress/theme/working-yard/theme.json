@@ -1,0 +1,151 @@
+{
+	"$schema": "https://schemas.wp.org/wp/6.6/theme.json",
+	"version": 3,
+	"settings": {
+		"appearanceTools": true,
+		"useRootPaddingAwareAlignments": true,
+		"layout": {
+			"contentSize": "42rem",
+			"wideSize": "72rem"
+		},
+		"color": {
+			"defaultPalette": false,
+			"defaultGradients": false,
+			"defaultDuotone": false,
+			"palette": [
+				{ "slug": "base", "name": "Paper", "color": "#fbfaf5" },
+				{ "slug": "panel", "name": "Panel", "color": "#f1efe4" },
+				{ "slug": "line", "name": "Line", "color": "#d9d5c3" },
+				{ "slug": "contrast", "name": "Ink", "color": "#1f2a1f" },
+				{ "slug": "muted", "name": "Muted ink", "color": "#5b6657" },
+				{ "slug": "accent", "name": "Leaf", "color": "#3d6b35" },
+				{ "slug": "on-accent", "name": "On leaf", "color": "#ffffff" },
+				{ "slug": "soil", "name": "Soil", "color": "#2b241c" },
+				{ "slug": "works", "name": "Works here", "color": "#2f6b2a" },
+				{ "slug": "partial", "name": "Partly worked", "color": "#8a5a00" },
+				{ "slug": "failed", "name": "Didn’t work", "color": "#9b2c1f" },
+				{ "slug": "researched", "name": "Researched", "color": "#3e5a7a" },
+				{ "slug": "unproven", "name": "Unproven", "color": "#6b5b7a" }
+			]
+		},
+		"spacing": {
+			"units": [ "px", "rem", "%", "vw" ],
+			"spacingSizes": [
+				{ "slug": "20", "name": "XS", "size": "0.5rem" },
+				{ "slug": "30", "name": "S", "size": "1rem" },
+				{ "slug": "40", "name": "M", "size": "clamp(1.25rem, 3vw, 2rem)" },
+				{ "slug": "50", "name": "L", "size": "clamp(2rem, 5vw, 3.5rem)" },
+				{ "slug": "60", "name": "XL", "size": "clamp(3rem, 8vw, 6rem)" }
+			]
+		},
+		"typography": {
+			"fluid": true,
+			"defaultFontSizes": false,
+			"fontFamilies": [
+				{
+					"slug": "body",
+					"name": "System sans",
+					"fontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif"
+				},
+				{
+					"slug": "heading",
+					"name": "Book serif",
+					"fontFamily": "\"Iowan Old Style\", \"Charter\", \"Bitstream Charter\", \"Sitka Text\", Cambria, Georgia, serif"
+				}
+			],
+			"fontSizes": [
+				{ "slug": "small", "name": "Small", "size": "0.9rem", "fluid": false },
+				{ "slug": "medium", "name": "Medium", "size": "1.0625rem", "fluid": false },
+				{ "slug": "large", "name": "Large", "size": "1.35rem", "fluid": { "min": "1.2rem", "max": "1.35rem" } },
+				{ "slug": "x-large", "name": "Extra large", "size": "2rem", "fluid": { "min": "1.6rem", "max": "2rem" } },
+				{ "slug": "xx-large", "name": "Huge", "size": "3.2rem", "fluid": { "min": "2.2rem", "max": "3.2rem" } }
+			]
+		}
+	},
+	"styles": {
+		"color": {
+			"background": "var(--wp--preset--color--base)",
+			"text": "var(--wp--preset--color--contrast)"
+		},
+		"spacing": {
+			"blockGap": "1.25rem",
+			"padding": {
+				"left": "max(16px, var(--wp--preset--spacing--40))",
+				"right": "max(16px, var(--wp--preset--spacing--40))"
+			}
+		},
+		"typography": {
+			"fontFamily": "var(--wp--preset--font-family--body)",
+			"fontSize": "var(--wp--preset--font-size--medium)",
+			"lineHeight": "1.65"
+		},
+		"elements": {
+			"link": {
+				"color": { "text": "var(--wp--preset--color--accent)" },
+				"typography": { "textDecoration": "underline" },
+				":hover": { "typography": { "textDecoration": "none" } }
+			},
+			"heading": {
+				"typography": {
+					"fontFamily": "var(--wp--preset--font-family--heading)",
+					"fontWeight": "600",
+					"lineHeight": "1.2"
+				},
+				"color": { "text": "var(--wp--preset--color--contrast)" }
+			},
+			"h1": { "typography": { "fontSize": "var(--wp--preset--font-size--xx-large)", "letterSpacing": "-0.01em" } },
+			"h2": { "typography": { "fontSize": "var(--wp--preset--font-size--x-large)" }, "spacing": { "margin": { "top": "2.5rem" } } },
+			"h3": { "typography": { "fontSize": "var(--wp--preset--font-size--large)" } },
+			"button": {
+				"color": {
+					"background": "var(--wp--preset--color--accent)",
+					"text": "var(--wp--preset--color--on-accent)"
+				},
+				"border": { "radius": "999px" },
+				"typography": { "fontWeight": "600", "fontSize": "1rem" },
+				"spacing": { "padding": { "top": "0.75rem", "bottom": "0.75rem", "left": "1.5rem", "right": "1.5rem" } },
+				":hover": { "color": { "background": "var(--wp--preset--color--works)" } }
+			},
+			"caption": {
+				"color": { "text": "var(--wp--preset--color--muted)" },
+				"typography": { "fontSize": "var(--wp--preset--font-size--small)" }
+			}
+		},
+		"blocks": {
+			"core/site-title": {
+				"typography": { "fontFamily": "var(--wp--preset--font-family--heading)", "fontWeight": "700", "fontSize": "1.35rem" },
+				"elements": { "link": { "color": { "text": "var(--wp--preset--color--contrast)" }, "typography": { "textDecoration": "none" } } }
+			},
+			"core/site-tagline": {
+				"color": { "text": "var(--wp--preset--color--muted)" },
+				"typography": { "fontSize": "var(--wp--preset--font-size--small)" }
+			},
+			"core/navigation": {
+				"typography": { "fontSize": "1rem", "fontWeight": "500" },
+				"elements": { "link": { "color": { "text": "var(--wp--preset--color--contrast)" }, "typography": { "textDecoration": "none" } } }
+			},
+			"core/post-date": {
+				"color": { "text": "var(--wp--preset--color--muted)" },
+				"typography": { "fontSize": "var(--wp--preset--font-size--small)" }
+			},
+			"core/post-excerpt": {
+				"color": { "text": "var(--wp--preset--color--muted)" }
+			},
+			"core/separator": {
+				"color": { "text": "var(--wp--preset--color--line)" }
+			},
+			"core/quote": {
+				"border": { "left": { "color": "var(--wp--preset--color--accent)", "width": "3px" } },
+				"spacing": { "padding": { "left": "1.25rem" } },
+				"typography": { "fontFamily": "var(--wp--preset--font-family--heading)", "fontSize": "var(--wp--preset--font-size--large)" }
+			}
+		}
+	},
+	"templateParts": [
+		{ "name": "header", "title": "Header", "area": "header" },
+		{ "name": "footer", "title": "Footer", "area": "footer" }
+	],
+	"customTemplates": [
+		{ "name": "page-wide", "title": "Page without title", "postTypes": [ "page" ] }
+	]
+}

@@ -1,0 +1,320 @@
+/*
+ * Base styles for the menu, facts and form. Colours come from the active
+ * theme's palette where it has matching names, so these sit inside any
+ * theme; the fallbacks keep them legible in one that has none.
+ */
+
+.ys-menu,
+.ys-facts,
+.ys-inquiry,
+.ys-listbar {
+	--ys-ink: var(--wp--preset--color--contrast, #1f2a1f);
+	--ys-muted: var(--wp--preset--color--muted, #5b6657);
+	--ys-paper: var(--wp--preset--color--base, #fbfaf5);
+	--ys-panel: var(--wp--preset--color--panel, #f1efe4);
+	--ys-line: var(--wp--preset--color--line, #d9d5c3);
+	--ys-accent: var(--wp--preset--color--accent, #3d6b35);
+	--ys-on-accent: var(--wp--preset--color--on-accent, #ffffff);
+	--ys-works: var(--wp--preset--color--works, #2f6b2a);
+	--ys-partial: var(--wp--preset--color--partial, #8a5a00);
+	--ys-failed: var(--wp--preset--color--failed, #9b2c1f);
+	--ys-researched: var(--wp--preset--color--researched, #3e5a7a);
+	--ys-unproven: var(--wp--preset--color--unproven, #6b5b7a);
+	--ys-radius: 10px;
+}
+
+/* ---------- tier badge ---------- */
+
+.ys-tier {
+	display: inline-block;
+	font-size: 0.78rem;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	line-height: 1.2;
+	padding: 0.25em 0.6em;
+	border-radius: 999px;
+	border: 1px solid currentColor;
+	white-space: nowrap;
+}
+.ys-tier--works { color: var(--ys-works); }
+.ys-tier--partial { color: var(--ys-partial); }
+.ys-tier--failed { color: var(--ys-failed); }
+.ys-tier--researched { color: var(--ys-researched); }
+.ys-tier--unproven { color: var(--ys-unproven); }
+
+/* ---------- menu ---------- */
+
+.ys-menu__group + .ys-menu__group {
+	margin-top: 3rem;
+}
+.ys-menu__heading {
+	margin-bottom: 0.25rem;
+}
+.ys-menu__intro {
+	color: var(--ys-muted);
+	margin-top: 0;
+	max-width: 40em;
+}
+.ys-menu__grid {
+	list-style: none;
+	margin: 1.25rem 0 0;
+	padding: 0;
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+	gap: 1.25rem;
+}
+.ys-card {
+	display: flex;
+	flex-direction: column;
+	background: var(--ys-paper);
+	border: 1px solid var(--ys-line);
+	border-radius: var(--ys-radius);
+	overflow: hidden;
+	margin: 0;
+}
+.ys-card__image img {
+	display: block;
+	width: 100%;
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+}
+.ys-card__body {
+	padding: 1rem 1.1rem 0.5rem;
+	flex: 1;
+}
+.ys-card__title {
+	font-size: 1.2rem;
+	margin: 0.6rem 0 0.4rem;
+	line-height: 1.25;
+}
+.ys-card__title a {
+	color: inherit;
+	text-decoration: none;
+}
+.ys-card__title a:hover,
+.ys-card__title a:focus-visible {
+	text-decoration: underline;
+}
+.ys-card__summary {
+	margin: 0;
+	font-size: 0.95rem;
+	color: var(--ys-muted);
+}
+.ys-card__cost {
+	margin: 0.6rem 0 0;
+	font-size: 0.9rem;
+	font-weight: 600;
+}
+.ys-card__actions {
+	padding: 0.75rem 1.1rem 1.1rem;
+}
+.ys-card--failed {
+	background: transparent;
+	border-style: dashed;
+}
+.ys-card--failed .ys-card__image img {
+	filter: grayscale(1);
+	opacity: 0.7;
+}
+
+/* ---------- the "add to my list" button ---------- */
+
+.ys-want {
+	font: inherit;
+	font-size: 0.9rem;
+	font-weight: 600;
+	cursor: pointer;
+	padding: 0.5em 0.9em;
+	border-radius: 999px;
+	border: 1.5px solid var(--ys-accent);
+	background: transparent;
+	color: var(--ys-accent);
+}
+.ys-want[aria-pressed="true"] {
+	background: var(--ys-accent);
+	color: var(--ys-on-accent);
+}
+.ys-want:focus-visible {
+	outline: 2px solid var(--ys-accent);
+	outline-offset: 2px;
+}
+.ys-want .ys-want__added,
+.ys-want[aria-pressed="true"] .ys-want__add {
+	display: none;
+}
+.ys-want[aria-pressed="true"] .ys-want__added {
+	display: inline;
+}
+.ys-not-offered {
+	font-size: 0.85rem;
+	color: var(--ys-muted);
+	font-style: italic;
+}
+
+/* ---------- facts panel ---------- */
+
+.ys-facts {
+	background: var(--ys-panel);
+	border-radius: var(--ys-radius);
+	padding: 1.25rem 1.4rem;
+}
+.ys-facts__tier {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem 0.75rem;
+	align-items: baseline;
+	margin: 0 0 1rem;
+}
+.ys-facts__tier span:last-child {
+	color: var(--ys-muted);
+	font-size: 0.95rem;
+}
+.ys-facts__list {
+	margin: 0;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+	gap: 0.9rem 1.5rem;
+}
+.ys-facts__list dt {
+	font-size: 0.78rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--ys-muted);
+}
+.ys-facts__list dd {
+	margin: 0.15rem 0 0;
+}
+.ys-facts__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75rem 1.25rem;
+	margin-top: 1.25rem;
+}
+.ys-facts__ask {
+	font-weight: 600;
+	color: var(--ys-accent);
+}
+
+/* ---------- inquiry form ---------- */
+
+.ys-inquiry {
+	scroll-margin-top: 2rem;
+}
+.ys-form label,
+.ys-form legend {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 0.3rem;
+}
+.ys-form .ys-check {
+	font-weight: 400;
+	display: flex;
+	gap: 0.5rem;
+	align-items: baseline;
+	margin: 0.35rem 0;
+}
+.ys-form input[type="text"],
+.ys-form input[type="email"],
+.ys-form input[type="tel"],
+.ys-form select,
+.ys-form textarea {
+	width: 100%;
+	box-sizing: border-box;
+	font: inherit;
+	padding: 0.6rem 0.7rem;
+	border: 1px solid var(--ys-line);
+	border-radius: 6px;
+	background: var(--ys-paper);
+	color: var(--ys-ink);
+}
+.ys-form input:focus-visible,
+.ys-form select:focus-visible,
+.ys-form textarea:focus-visible {
+	outline: 2px solid var(--ys-accent);
+	outline-offset: 1px;
+	border-color: var(--ys-accent);
+}
+.ys-form fieldset {
+	border: 0;
+	padding: 0;
+	margin: 1.25rem 0;
+}
+.ys-form__row {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+	gap: 0 1.25rem;
+}
+.ys-form__systems {
+	columns: 2 14rem;
+}
+.ys-form__systems legend,
+.ys-form__systems .ys-form__hint {
+	column-span: all;
+}
+.ys-form__hint {
+	display: block;
+	font-size: 0.9rem;
+	color: var(--ys-muted);
+	margin: 0 0 0.4rem;
+}
+.ys-form__optional {
+	font-weight: 400;
+	color: var(--ys-muted);
+}
+.ys-form__trap {
+	position: absolute !important;
+	left: -9999px;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+}
+.ys-form__submit {
+	font: inherit;
+	font-weight: 600;
+	cursor: pointer;
+	padding: 0.75rem 1.6rem;
+	border: 0;
+	border-radius: 999px;
+	background: var(--ys-accent);
+	color: var(--ys-on-accent);
+}
+.ys-notice {
+	border-radius: var(--ys-radius);
+	padding: 0.25rem 1.1rem;
+	margin-bottom: 1.5rem;
+	border-left: 4px solid;
+}
+.ys-notice--ok {
+	border-color: var(--ys-works);
+	background: var(--ys-panel);
+}
+.ys-notice--error {
+	border-color: var(--ys-failed);
+	background: var(--ys-panel);
+}
+
+/* ---------- the list follows the visitor ---------- */
+
+.ys-listbar {
+	position: fixed;
+	z-index: 50;
+	right: 1rem;
+	bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+	left: auto;
+	max-width: calc(100% - 2rem);
+}
+.ys-listbar[hidden] {
+	display: none;
+}
+.ys-listbar a {
+	display: block;
+	padding: 0.75rem 1.1rem;
+	border-radius: 999px;
+	background: var(--ys-ink);
+	color: var(--ys-paper);
+	font-weight: 600;
+	font-size: 0.95rem;
+	text-decoration: none;
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
