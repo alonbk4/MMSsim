@@ -1,5 +1,9 @@
 # Builds the app and publishes dist/ to GitHub Pages.
 #
+# Only `main` is published: work happens on other branches, where ci.yml runs
+# the same tests and build without deploying, and reaches the live site by
+# being merged.
+#
 # Pages must be set to deploy from GitHub Actions for this to take effect:
 # Settings → Pages → Build and deployment → Source: "GitHub Actions".
 # Serving the repository root instead publishes the dev index.html, whose
@@ -11,8 +15,6 @@ on:
   push:
     branches:
       - main
-      - master
-      - claude/yard-systems-simulator-wyh9l9
   workflow_dispatch:
 
 permissions:

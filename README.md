@@ -40,8 +40,10 @@ much.
 Nothing in the catalog ships in a tested tier — those mean *you* built it,
 which no catalog entry can claim for you. This yard's own results live
 separately, in `YARD_RESULTS` in `src/engine/defaults.ts`, as overrides the
-starting design carries: the Aerobin and the biochar (made, then charged in a
-tote) are marked *Tested — works*. A design saved before that list existed gets
+starting design carries: the Aerobin, the biochar (made, then charged in a
+tote) and the aquaponics system are marked *Tested — works*; the nettle
+ferment and the banana peel tea, one moulded batch and one good one each,
+*Tested — partly worked*. A design saved before that list existed gets
 it once on upgrade, and never over a tier you set yourself. So the app tells you not just "this design covers 88% of your
 irrigation" but "…and only 58% if the researched and unproven parts come in at
 the bottom of their range." As you build things here, record what happened; the
@@ -62,8 +64,22 @@ Charts are hand-rolled SVG — no charting dependency.
 
 ### Deploying it
 
-`.github/workflows/pages.yml` builds and publishes `dist/` on every push to the
-default branch. It only takes effect once Pages is pointed at the workflow:
+`main` is the live site. `.github/workflows/pages.yml` builds and publishes
+`dist/` on every push to `main`, and nothing else deploys. Work happens on
+other branches, where `.github/workflows/ci.yml` runs the same tests and build
+without publishing; a change goes live when it is merged into `main`, so a
+broken build stops at the branch instead of reaching the phone in your pocket.
+
+Two repository settings go with this:
+
+> Settings → General → Default branch → **main**
+>
+> Settings → Environments → github-pages → Deployment branches → allow **main**
+
+The second matters because Pages restricts which branches may deploy, and the
+list was made when a different branch was the default.
+
+The workflow only takes effect once Pages is pointed at it:
 
 > Settings → Pages → Build and deployment → **Source: GitHub Actions**
 
@@ -178,8 +194,8 @@ latitude and keep its longitude, which once sent an Ann Arbor fetch to the
 shore of James Bay.)
 
 The table is rebuilt by the **Build offline weather averages** workflow
-(Actions tab → Run workflow), which runs `scripts/build-climate-normals.mjs`
-and commits the result; `missing` mode fills only cells a rate-limited run
+(Actions tab → Run workflow, from a working branch rather than `main`), which
+runs `scripts/build-climate-normals.mjs` and commits the result to that branch; `missing` mode fills only cells a rate-limited run
 left out. These data were obtained from the NASA Langley Research Center
 (LaRC) POWER Project funded through the NASA Earth Science/Applied Science
 Program.

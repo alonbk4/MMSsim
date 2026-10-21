@@ -1,0 +1,32 @@
+# Tests and builds every branch that is not `main`, and every pull request,
+# without publishing anything. A change has to pass this before it is worth
+# merging; pages.yml then deploys it from `main`.
+name: Check
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Test the engine
+        run: npm test
+
+      - name: Typecheck and build
+        run: npm run build
