@@ -167,6 +167,21 @@ describe("the yard's own results", () => {
     expect(d.overrides.aerobin.yieldFactor).toBe(0.8);
   });
 
+  it('reach a design that already had the earlier ones', () => {
+    // Opened the app at version 4, so it has the Aerobin but not what came
+    // after; it gets the later entries without the earlier ones reapplied.
+    const d = normalizeDesign({
+      ...legacy(),
+      version: 4,
+      overrides: { aerobin: { evidence: 'testedPartial' } },
+    });
+    expect(d.overrides.aquaponics.evidence).toBe('testedSuccess');
+    expect(d.overrides['nettle-patch'].evidence).toBe('testedPartial');
+    expect(d.overrides['banana-peel-tea'].evidence).toBe('testedPartial');
+    expect(d.overrides.aerobin.evidence).toBe('testedPartial');
+    expect(d.overrides['biochar-kiln']).toBeUndefined();
+  });
+
   it('are applied once, so clearing one later sticks', () => {
     const current = { ...createDefaultDesign(), overrides: {} };
     const d = normalizeDesign(JSON.parse(JSON.stringify(current)));

@@ -3,7 +3,7 @@ import { isEvidenceTier } from './resources';
 import { ANN_ARBOR } from './data/observed/ann-arbor';
 import type { Design, Placement, SiteProfile, SystemOverride } from './types';
 
-export const DESIGN_VERSION = 4;
+export const DESIGN_VERSION = 5;
 
 /**
  * What has actually been tried in this yard, and how it went.
@@ -17,18 +17,32 @@ export const DESIGN_VERSION = 4;
  *   about a week, then 120 °F, and back to 125 °F a day after reloading.
  * - Biochar: a batch made in August 2026, crushed and charged in a 27-gallon
  *   tote with diluted urine and aquaponics water, then worked into the Aerobin.
+ * - Aquaponics: the IBC system, past a rough start with the fingerlings and
+ *   "stable and running like a champ" by June 2026; its water feeds the
+ *   worm tea, the biochar and the Aerobin.
+ * - Nettle ferment and banana peel tea: the first batch of each floated,
+ *   moulded and was dumped in August 2026; the second, weighted under, worked.
+ *   One of two is a partial result, not a failure and not yet a success.
  *
- * Designs saved before this list existed get it once, on upgrade, and only
- * for systems the user has not already given a tier of their own.
+ * `since` is the design version that introduced the entry. A saved design
+ * older than that gets it once, on upgrade, and only for systems the user has
+ * not already given a tier of their own — so an entry added later still
+ * reaches people who opened the app before it existed.
  */
-export const YARD_RESULTS: Record<string, SystemOverride> = {
-  aerobin: { evidence: 'testedSuccess' },
-  'biochar-kiln': { evidence: 'testedSuccess' },
-  'biochar-tote': { evidence: 'testedSuccess' },
-};
+const YARD_LOG: { id: string; since: number; override: SystemOverride }[] = [
+  { id: 'aerobin', since: 4, override: { evidence: 'testedSuccess' } },
+  { id: 'biochar-kiln', since: 4, override: { evidence: 'testedSuccess' } },
+  { id: 'biochar-tote', since: 4, override: { evidence: 'testedSuccess' } },
+  { id: 'aquaponics', since: 5, override: { evidence: 'testedSuccess' } },
+  { id: 'nettle-patch', since: 5, override: { evidence: 'testedPartial' } },
+  { id: 'banana-peel-tea', since: 5, override: { evidence: 'testedPartial' } },
+];
+
+export const YARD_RESULTS: Record<string, SystemOverride> =
+  Object.fromEntries(YARD_LOG.map((e) => [e.id, e.override]));
 
 const yardResults = (): Design['overrides'] =>
-  Object.fromEntries(Object.entries(YARD_RESULTS).map(([id, ov]) => [id, { ...ov }]));
+  Object.fromEntries(YARD_LOG.map((e) => [e.id, { ...e.override }]));
 
 let seq = 0;
 export function newId(prefix = 'p'): string {
@@ -94,9 +108,9 @@ export function normalizeDesign(raw: unknown): Design {
 
   const overrides = normalizeOverrides(d.overrides);
   const storedVersion = typeof d.version === 'number' ? d.version : 0;
-  if (storedVersion < 4) {
-    for (const [id, ov] of Object.entries(YARD_RESULTS)) {
-      if (!overrides[id]?.evidence) overrides[id] = { ...overrides[id], ...ov };
+  for (const { id, since, override } of YARD_LOG) {
+    if (storedVersion < since && !overrides[id]?.evidence) {
+      overrides[id] = { ...overrides[id], ...override };
     }
   }
 

@@ -1533,7 +1533,7 @@ export const CATALOG: SystemDef[] = [
       out('compost', yearly(1.5, 'growing')),
       need('labor', yearly(2, 'growing')),
     ],
-    notes: 'Four peels to a litre, chopped, fully submerged under a weight, loosely covered, two to five days; then 1:4 as a soil drench, never on leaves, and a week at most in the fridge. Freeze peels between batches.\n\nWhat comes out is some potassium and not much else — the peel is about as rich as the compost it would otherwise have gone into, so this is mostly a way of putting that potassium where the plant is at flowering rather than a new source of it.\n\nFloating peel goes mouldy, not ferment-y. The batch made here in August 2026 grew fuzzy white and green mould on the exposed peel and was dumped — onto the heap, not the grow bags and not the aquaponics. A weight on top is the whole fix.',
+    notes: 'Four peels to a litre, chopped, fully submerged under a weight, loosely covered, two to five days; then 1:4 as a soil drench, never on leaves, and a week at most in the fridge. Freeze peels between batches.\n\nWhat comes out is some potassium and not much else — the peel is about as rich as the compost it would otherwise have gone into, so this is mostly a way of putting that potassium where the plant is at flowering rather than a new source of it.\n\nFloating peel goes mouldy, not ferment-y. The first batch made here, in August 2026, grew fuzzy white and green mould on the exposed peel and was dumped — onto the heap, not the grow bags and not the aquaponics. The second, weighted under, worked. A weight on top is the whole fix.',
     sources: ['Extension commentary on banana peel fertiliser claims', 'Banana peel mineral composition analyses'],
   },
   {
