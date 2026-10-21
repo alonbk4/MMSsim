@@ -80,15 +80,15 @@ describe('physical flows', () => {
   });
 
   it('scales output with the site, not just the system', () => {
-    // Both sites built from presets, so this compares climates rather than
-    // whatever the default site happens to be this week.
+    // Both sites built from presets on the same located ground, so this
+    // compares the climates' cloud cover with the sun geometry held still.
     const base = designWith(makePlacement('solar-pv', 4, 0, 0));
     const at = (id: string) => {
       const preset = CLIMATE_PRESETS.find((p) => p.id === id)!;
       const design: Design = { ...base, site: siteFromPreset(preset, DEFAULT_SITE) };
       return simulate(design, CATALOG_BY_ID).expected.resources.electricity.produced;
     };
-    expect(at('aridDesert')).toBeGreaterThan(at('temperateOceanic') * 1.5);
+    expect(at('aridDesert')).toBeGreaterThan(at('temperateOceanic') * 1.35);
   });
 });
 

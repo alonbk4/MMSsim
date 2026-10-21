@@ -210,9 +210,16 @@ export function siteFromPreset(preset: ClimatePreset, base: SiteProfile): SitePr
     meanTempC: flip(preset.meanTempC),
     etoMm: flip(preset.etoMm),
   };
-  // Picking a climate also moves you to where that climate is — otherwise
-  // choosing "Arid / desert" while sitting at 60°N quietly keeps northern sun
-  // angles. The hemisphere you are in is preserved.
+  // A preset describes weather, not a place. A site that has been located — a
+  // ZIP, the device, a measured record — stays where it is and only the
+  // weather changes. Moving it used to leave the longitude behind: choosing
+  // "Temperate oceanic" in Ann Arbor put the site at 52°N, 83.7°W, and the
+  // next weather fetch came back from the shore of James Bay.
+  if (base.longitude !== undefined) return applyLatitude(next, base.latitude);
+
+  // An unlocated site moves to where the climate is typical, so "Arid /
+  // desert" at 60°N does not quietly keep northern sun angles. The hemisphere
+  // is preserved.
   const hemisphere = base.latitude < 0 ? -1 : 1;
   return applyLatitude(next, hemisphere * preset.refLatitude);
 }

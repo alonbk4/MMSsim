@@ -95,6 +95,24 @@ describe('applying a climate record', () => {
     expect(preset.peakSunHours).not.toEqual(ANN_ARBOR.peakSunHours);
   });
 
+  it('keeps a located site where it is when a preset is chosen', () => {
+    // Choosing "Temperate oceanic" in Ann Arbor once moved the site to 52°N
+    // and left the longitude behind, so the next fetch landed on James Bay.
+    const observed = applyObservedClimate(DEFAULT_SITE, ANN_ARBOR);
+    const oceanic = siteFromPreset(getPreset('temperateOceanic'), observed);
+    expect(oceanic.latitude).toBe(ANN_ARBOR.latitude);
+    expect(oceanic.longitude).toBe(ANN_ARBOR.longitude);
+    expect(oceanic.climate).toBe('temperateOceanic');
+    // The sun is recomputed for this latitude from the preset's cloudiness.
+    expect(oceanic.peakSunHours[5]).toBeGreaterThan(oceanic.peakSunHours[0]);
+  });
+
+  it('still moves an unlocated site to where the climate is typical', () => {
+    const { longitude: _drop, ...unlocated } = DEFAULT_SITE;
+    const desert = siteFromPreset(getPreset('aridDesert'), unlocated);
+    expect(desert.latitude).toBe(getPreset('aridDesert').refLatitude);
+  });
+
   it('derives a credible cloudiness for the measured site', () => {
     const k = observedClearness(ANN_ARBOR);
     expect(k).toBeGreaterThan(0.3);
