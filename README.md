@@ -37,8 +37,12 @@ know *how far* short it fell, mark it as working and enter the measured number
 instead — the partial tier is for when you know it disappointed but not by how
 much.
 
-Nothing ships in a tested tier — those mean *you* built it, which no default can
-claim for you. So the app tells you not just "this design covers 88% of your
+Nothing in the catalog ships in a tested tier — those mean *you* built it,
+which no catalog entry can claim for you. This yard's own results live
+separately, in `YARD_RESULTS` in `src/engine/defaults.ts`, as overrides the
+starting design carries: the Aerobin and the biochar (made, then charged in a
+tote) are marked *Tested — works*. A design saved before that list existed gets
+it once on upgrade, and never over a tier you set yourself. So the app tells you not just "this design covers 88% of your
 irrigation" but "…and only 58% if the researched and unproven parts come in at
 the bottom of their range." As you build things here, record what happened; the
 bands narrow and the answers stop being a literature review.
@@ -129,8 +133,9 @@ too cold, and the year 215 mm too dry. It also missed a 159 mm evaporative
 deficit from June to August, which is the reason a Michigan garden still needs
 watering in July despite a wet-looking annual total.
 
-The app can also fetch for itself: set a location, press **Fetch weather for
-this location**, and it pulls and averages the same fifteen years. The offline
+The app can also fetch for itself: set a location, press **Fetch measured
+weather for …** (the button names the point it will use), and it pulls and
+averages the same fifteen years. The offline
 tool remains, both as the no-network path and because it is where the response
 shape was confirmed in the first place. Records are kept in a small library, so
 a design can be compared against another town — the question "what would this
@@ -154,11 +159,30 @@ median 0.23°). There is deliberately no geocoding service in the loop — the a
 is meant to keep working in a shed at the bottom of the garden, which is where
 you would be standing when you wanted it.
 
-What a location buys you is the sun, and only the sun. It cannot tell you your
-climate: two places at 45°N can be Portland or Ulaanbaatar, and no amount of
-coordinates settles which without real weather data. So the climate preset
-stays your call — the app just marks the ones that would be unusual at your
-latitude and records where the latitude came from, and how sure it is.
+**A US location sets the weather too, offline.** Latitude alone cannot tell you
+your climate — two places at 45°N can be Portland or Ulaanbaatar — so the app
+carries real weather for the whole country instead: NASA POWER's climatology
+for every grid cell the ZIP table lands in (976 cells of 0.5° × 0.625°, about
+64 KB gzipped, loaded only when first needed and precached for offline use).
+Each cell holds 2011–2025 monthly temperature and rain from MERRA-2, sunshine
+from the CERES satellites, and reference ET computed with FAO-56
+Penman–Monteith. Against the measured Ann Arbor record the Ann Arbor cell is
+within about 3% on rain and 4% on evaporative demand.
+
+When you enter a ZIP or use your location, the site takes, in order: a saved
+record within 30 km (what you fetched or measured beats a coarse typical), else
+the built-in cell, else — outside the US — the climate it already had, with a
+note saying so. Picking a climate preset afterwards changes only the weather;
+a located site stays where it is. (It used to move to the preset's home
+latitude and keep its longitude, which once sent an Ann Arbor fetch to the
+shore of James Bay.)
+
+The table is rebuilt by the **Build offline weather averages** workflow
+(Actions tab → Run workflow), which runs `scripts/build-climate-normals.mjs`
+and commits the result; `missing` mode fills only cells a rate-limited run
+left out. These data were obtained from the NASA Langley Research Center
+(LaRC) POWER Project funded through the NASA Earth Science/Applied Science
+Program.
 
 **Sun comes from geometry.** The climate preset knows how cloudy a place is;
 latitude knows how much sun there is to be blocked, how high it climbs and how
@@ -230,7 +254,7 @@ src/ui/         canvas, panes, charts, shared components
 
 ## Making it yours
 
-The catalog in `src/engine/catalog.ts` is a starting point, ~50 systems across
+The catalog in `src/engine/catalog.ts` is a starting point, ~70 systems across
 water, food, energy, sanitation, soil and shelter. Two ways to correct it:
 
 1. **In the app** — Catalog tab → a system → *Your numbers*. Set its tier, scale

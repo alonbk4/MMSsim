@@ -8,6 +8,7 @@ import {
   type ResolvedLocation,
 } from '../engine/location';
 import { ClimateFetchError, fetchClimate } from '../engine/climateFetch';
+import { findNormals, type NormalsHit, type WeatherChoice } from '../engine/normals';
 import { parseObservedClimate } from '../engine/observed';
 import { sunSummary } from '../engine/solar';
 import type { SiteProfile } from '../engine/types';
@@ -35,6 +36,7 @@ export function SitePane() {
                 onChange={(e) => num({ name: e.target.value })}
               />
             </Field>
+            <SiteLocation />
             <Field label="Climate">
               <select
                 value={site.climate}
@@ -87,7 +89,7 @@ export function SitePane() {
 
         <div className="card">
           <header>
-            <h2>Where you are</h2>
+            <h2>The sun here</h2>
             <span className="sub">latitude sets the sun</span>
           </header>
           <LatitudeControl />
@@ -193,21 +195,75 @@ export function SitePane() {
 }
 
 /**
- * Finding the site without a network.
+ * Finding the site, and with it the weather, without a network.
  *
  * Both routes work offline: the device's own fix, and a bundled table of US ZIP
  * centroids. Deliberately no geocoding service — this is meant to keep working
  * in a shed at the bottom of the garden, which is where you would actually be
- * standing when you wanted it.
+ * standing when you wanted it. Once located, the site takes a saved record for
+ * the same ground if there is one, else the built-in averages for that grid
+ * cell (US only), else keeps the climate it had and says so.
  */
-/**
- * Load a measured record in place of an archetype.
- *
- * The fetching happens in `tools/climate-fetch.html` rather than here: the
- * build environment cannot reach the weather archive, so rather than ship an
- * integration nobody has seen work, the tool does the request in a browser and
- * this takes the twelve-number result.
- */
+function SiteLocation() {
+  const site = useApp((s) => s.design.site);
+  const adoptLocation = useApp((s) => s.adoptLocation);
+  const [outcome, setOutcome] = useState<WeatherChoice | null>(null);
+
+  const adopt = async (loc: ResolvedLocation) => {
+    let normals: NormalsHit | null = null;
+    try {
+      normals = await findNormals(loc.latitude, loc.longitude);
+    } catch {
+      // The table is a separate chunk; offline before it was ever cached, it
+      // is simply not there, and the location still counts.
+    }
+    setOutcome(adoptLocation(loc, normals));
+  };
+
+  return (
+    <Field label="Where">
+      <LocationFinder onFound={adopt} />
+      {site.locationLabel && (
+        <p className="meta-line">
+          Set from {site.locationLabel}
+          {site.locationSource === 'zip' && site.locationAccuracyDeg !== undefined
+            && ` — good to about ${site.locationAccuracyDeg.toFixed(1)}° of latitude`}
+          {site.locationSource === 'device' && ' — reported by this device'}
+          {site.longitude !== undefined && ` · ${formatCoords(site.latitude, site.longitude)}`}
+        </p>
+      )}
+      {outcome && <WeatherOutcome outcome={outcome} />}
+    </Field>
+  );
+}
+
+function WeatherOutcome({ outcome }: { outcome: WeatherChoice }) {
+  if (outcome.kind === 'saved') {
+    return (
+      <p className="meta-line" style={{ color: 'var(--success-text)' }}>
+        Weather: your saved record for {outcome.record.name}
+        {outcome.km >= 1 ? `, ${outcome.km.toFixed(0)} km away` : ''} — measured beats typical.
+      </p>
+    );
+  }
+  if (outcome.kind === 'normals') {
+    const { climate, gridOffsetKm } = outcome.hit;
+    return (
+      <p className="meta-line" style={{ color: 'var(--success-text)' }}>
+        Weather: built-in averages for {climate.years[0]}–{climate.years[1]}, from a grid
+        cell {gridOffsetKm < 1 ? 'right here' : `${gridOffsetKm.toFixed(0)} km away`}. No network
+        needed. Fetching below gets fifteen years on a finer grid.
+      </p>
+    );
+  }
+  return (
+    <p className="meta-line">
+      No built-in weather this far from a US ZIP, so the climate below is unchanged —
+      pick the closest one, or fetch measured weather for this point.
+    </p>
+  );
+}
+
 /**
  * Where the weather comes from: fetch it for the current coordinates, switch
  * between records already kept, or paste one in from the offline tool.
@@ -252,7 +308,7 @@ function ClimateSources() {
     <div className="stack" style={{ gap: 8 }}>
       <div className="row wrap" style={{ gap: 8 }}>
         <button className="btn small" onClick={fetchHere} disabled={busy}>
-          {busy ? 'Fetching 15 years…' : 'Fetch weather for this location'}
+          {busy ? 'Fetching 15 years…' : `Fetch measured weather for ${label ?? 'this location'}`}
         </button>
         <ClimateImport />
       </div>
@@ -398,9 +454,8 @@ function LocationFinder({ onFound }: { onFound: (loc: ResolvedLocation) => void 
         <p className="meta-line" style={{ color: 'var(--status-critical)' }}>{error}</p>
       )}
       <p className="meta-line">
-        Sets your latitude, which is what places the sun. It cannot tell you your
-        climate — two places at 45° can be Portland or Mongolia — so that stays
-        your call above.
+        Places the sun, and in the US sets typical weather from a built-in table —
+        no network needed. Elsewhere, pick the closest climate below or fetch.
       </p>
     </div>
   );
@@ -480,30 +535,8 @@ function LatitudeControl() {
       locationAccuracyDeg: undefined,
     });
 
-  /** Adopt a looked-up position, keeping a record of where it came from. */
-  const adopt = (loc: ResolvedLocation) =>
-    setSite({
-      ...applyLatitude(site, loc.latitude),
-      longitude: loc.longitude,
-      locationLabel: loc.label,
-      locationSource: loc.source,
-      locationAccuracyDeg: loc.accuracyDeg,
-    });
-
   return (
     <div className="stack">
-      <LocationFinder onFound={adopt} />
-
-      {site.locationLabel && (
-        <p className="meta-line" style={{ marginTop: -2 }}>
-          Set from {site.locationLabel}
-          {site.locationSource === 'zip' && site.locationAccuracyDeg !== undefined
-            && ` — good to about ${site.locationAccuracyDeg.toFixed(1)}° of latitude, which moves the sun by the same`}
-          {site.locationSource === 'device' && ' — reported by this device'}
-          {site.longitude !== undefined && ` · ${formatCoords(site.latitude, site.longitude)}`}
-        </p>
-      )}
-
       <Field
         label="Latitude"
         value={`${Math.abs(site.latitude).toFixed(1)}° ${hemisphere}`}
@@ -551,10 +584,11 @@ function LatitudeControl() {
       </div>
 
       <p className="card-note" style={{ marginBottom: 0 }}>
-        The climate preset says how cloudy a place is; latitude says how much sun
-        there is to be blocked, how high it climbs and how long the day runs. Move
-        this and the sun figures — and everything that depends on them, panels
-        included — recompute from geometry. Crossing the equator flips the seasons.
+        The weather says how cloudy a place is; latitude says how much sun there
+        is to be blocked, how high it climbs and how long the day runs. Move this
+        and the sun figures — and everything that depends on them, panels
+        included — recompute from geometry. It is a what-if: the ZIP or location
+        above is what sets where you are. Crossing the equator flips the seasons.
       </p>
     </div>
   );

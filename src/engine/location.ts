@@ -7,10 +7,10 @@
  * the bottom of the garden, and a lookup that needs a network is a lookup that
  * fails exactly when you are standing in the yard.
  *
- * What a location buys you is the sun: latitude sets how high it climbs and how
- * long the day runs. It does *not* tell you your climate. Two places at 45°N
- * can be Portland or Ulaanbaatar, and no amount of coordinates settles which
- * without real weather data — so the climate preset stays the user's call.
+ * What latitude buys you is the sun: how high it climbs and how long the day
+ * runs. It does *not* tell you your climate — two places at 45°N can be
+ * Portland or Ulaanbaatar — which is why a located site then looks up real
+ * weather for its grid cell (see normals.ts) rather than inferring any.
  */
 import { ZIP_CENTROIDS } from './data/zip-centroids';
 

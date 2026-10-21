@@ -5,6 +5,9 @@ import {
   createDefaultDesign, DESIGN_VERSION, makePlacement, newId, normalizeDesign,
 } from '../engine/defaults';
 import { effectiveSystem, simulate, type SimResult } from '../engine/simulate';
+import { applyLatitude, recomputeSun } from '../engine/climate';
+import type { ResolvedLocation } from '../engine/location';
+import { pickWeather, type NormalsHit, type WeatherChoice } from '../engine/normals';
 import { applyObservedClimate, type ObservedClimate } from '../engine/observed';
 import type {
   Design, EvidenceTier, FeatureKind, ObservedClimateRecord, Placement, SiteFeature,
@@ -49,6 +52,12 @@ interface AppState {
   removePlacement: (id: string) => void;
 
   setSite: (patch: Partial<SiteProfile>) => void;
+  /**
+   * Move the site to a looked-up place and give it the best weather on hand:
+   * a saved record for the same ground, else the built-in averages, else
+   * whatever it had. Says which, so the UI can.
+   */
+  adoptLocation: (loc: ResolvedLocation, normals: NormalsHit | null) => WeatherChoice;
 
   /** Keep a fetched climate for later, and switch between the ones kept. */
   saveClimate: (climate: ObservedClimate, name: string) => string;
@@ -171,6 +180,37 @@ export const useApp = create<AppState>()(
       setSite: (patch) =>
         set((s) => ({ design: { ...s.design, site: { ...s.design.site, ...patch } } })),
 
+      adoptLocation: (loc, normals) => {
+        const { design } = get();
+        const choice = pickWeather(loc.latitude, loc.longitude, design.climates, normals);
+        let next: Design = {
+          ...design,
+          site: {
+            ...applyLatitude(design.site, loc.latitude),
+            longitude: loc.longitude,
+            locationLabel: loc.label,
+            locationSource: loc.source,
+            locationAccuracyDeg: loc.accuracyDeg,
+          },
+        };
+        if (choice.kind === 'saved') {
+          next = applyObservedClimateToDesign(next, choice.record);
+        } else if (choice.kind === 'normals') {
+          const { climate } = choice.hit;
+          const site = recomputeSun(applyObservedClimate(next.site, climate));
+          next = {
+            ...next,
+            site: {
+              ...site,
+              name: design.site.name,
+              climateLabel: `${loc.label} · typical ${climate.years[0]}–${climate.years[1]}`,
+            },
+          };
+        }
+        set({ design: next });
+        return choice;
+      },
+
       saveClimate: (climate, name) => {
         const id = newId('c');
         const record: ObservedClimateRecord = { id, name, ...climate };
@@ -265,7 +305,9 @@ export const useApp = create<AppState>()(
 
 /** Apply a saved record to the design's site, keeping its name as the label. */
 function applyObservedClimateToDesign(design: Design, record: ObservedClimateRecord): Design {
-  const site = applyObservedClimate(design.site, record);
+  // Through recomputeSun so a sloped site keeps its tilt: the record is
+  // measured on the flat.
+  const site = recomputeSun(applyObservedClimate(design.site, record));
   return {
     ...design,
     site: { ...site, name: design.site.name, climateLabel: `${record.name} · ${site.climateLabel}` },
