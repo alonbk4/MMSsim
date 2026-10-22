@@ -171,11 +171,14 @@ jobs:
             fi
             wp rewrite flush
             wp cache flush || true
-            # A page cache keeps serving the old pages after a deploy until it
-            # is told otherwise. Hummingbird (on WPMU DEV by default) clears
-            # on this action; its cache folder goes too, in case it doesn't.
-            wp eval 'do_action( \"wphb_clear_page_cache\" );' || true
-            rm -rf wp-content/wphb-cache/cache
+            # The host's static page cache keeps serving the old pages after a
+            # deploy until it is cleared. WPMU DEV provides its own command for
+            # that; elsewhere, Hummingbird's page cache clears on this action.
+            if wp cli has-command 'hosting clearcache'; then
+              wp hosting clearcache
+            else
+              wp eval 'do_action( \"wphb_clear_page_cache\" );' || true
+            fi
             echo \"Page caches cleared. Active plugins: \$(wp plugin list --status=active --field=name | tr '\n' ' ')\""
 
           if [ "$DIAGNOSE" = "true" ]; then
