@@ -96,6 +96,10 @@ jobs:
             }
           }
 
+          # Log in once on its own first. Inside $(…) below, the explanation
+          # of a failed login would be captured instead of shown.
+          remote true || exit 1
+
           if [ -z "$WP_PATH" ]; then
             WP_PATH=$(remote 'f=$(find ~ /var/web -maxdepth 4 -name wp-config.php 2>/dev/null | head -1); [ -n "$f" ] && dirname "$f"')
           fi
