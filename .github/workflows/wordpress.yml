@@ -165,4 +165,10 @@ jobs:
               wp yard-starter --user=\$admin
             fi
             wp rewrite flush
-            wp cache flush || true"
+            wp cache flush || true
+            # A page cache keeps serving the old pages after a deploy until it
+            # is told otherwise. Hummingbird (on WPMU DEV by default) clears
+            # on this action; its cache folder goes too, in case it doesn't.
+            wp eval 'do_action( \"wphb_clear_page_cache\" );' || true
+            rm -rf wp-content/wphb-cache/cache
+            echo \"Page caches cleared. Active plugins: \$(wp plugin list --status=active --field=name | tr '\n' ' ')\""
