@@ -169,6 +169,9 @@ jobs:
             elif [ '$STARTER' = 'true' ]; then
               wp yard-starter --user=\$admin
             fi
+            # Text written into the plugin since the site was set up (answers
+            # to its open questions); it never overwrites an edit.
+            wp yard-update --user=\$admin
             wp rewrite flush
             wp cache flush || true
             # The host's static page cache keeps serving the old pages after a

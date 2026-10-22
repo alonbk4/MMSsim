@@ -40,6 +40,14 @@ description and link-preview tags, so a page shared on Facebook, Nextdoor or
 in a text shows a title, a line and a picture. These step aside when an SEO
 plugin is active, so nothing is printed twice.
 
+**Statuses from the simulator.** The simulator is where results get
+recorded, and it pushes them here: Site tab → Website, with the address and
+the key from *Settings → Yard site*. Each website system follows one
+simulator system (*Simulator system* in its sidebar box); a push sets its
+badge, and publishes it if the simulator says it has been tested in the
+yard. Nothing is ever unpublished by a push. The key can change statuses and
+nothing else; *Make a new key* retires the old one.
+
 **Journal.** Six first articles, written from the yard's own record, install
 as drafts: they are in your voice, so nothing is published under your name
 until you have read it.
@@ -65,6 +73,11 @@ where the plugin is not active also activates the plugin and theme and lays
 down the starter content; every later deploy only replaces files, so nothing
 changed in the dashboard is switched back. To add starter content that has
 been added to the code since, run the workflow by hand with *starter* ticked.
+
+Every deploy also runs `wp yard-update`, which carries text written into the
+plugin later (such as answers to the starter content's questions) into a
+site already running. It replaces a passage only while the original is still
+there word for word, so nothing edited in WordPress is overwritten.
 
 Every deploy ends by clearing the host's static page cache
 (`wp hosting clearcache static` on WPMU DEV). Without it, visitors keep

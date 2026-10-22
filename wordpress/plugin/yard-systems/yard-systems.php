@@ -22,6 +22,8 @@ require_once YARD_SYSTEMS_DIR . 'includes/blocks.php';
 require_once YARD_SYSTEMS_DIR . 'includes/settings.php';
 require_once YARD_SYSTEMS_DIR . 'includes/schema.php';
 require_once YARD_SYSTEMS_DIR . 'includes/starter.php';
+require_once YARD_SYSTEMS_DIR . 'includes/updates.php';
+require_once YARD_SYSTEMS_DIR . 'includes/sync.php';
 
 register_activation_hook( __FILE__, function () {
 	yard_systems_register_types();

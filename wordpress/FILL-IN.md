@@ -1,70 +1,35 @@
-# What only you can fill in
+# What's still open
 
-Everything on the site that needs your knowledge, in one place. Answer it
-here, or straight in WordPress — every gap on a page is marked `[[YOU: …]]`,
-and the dashboard lists each published page that still has one.
+Answered so far (October 2026) and now on the site: the name, Alon's story,
+the free first visit, building and teaching, visits, the aquaponics start and
+winter shutdown, and the biochar kiln.
 
-## Decisions
+## For you
 
-- [ ] **The name.** Settings → General → Site Title. Until then every page
-      title and search result says `makemicld.tempurl.host`.
-- [ ] **Your yard visit: what it costs.** A flat fee, or the first one free?
-      (Work with me, step 3.) I would publish a number.
-- [ ] **Build it, or teach it?** What you will build for people, and what you
-      will show them how to build. (Work with me, step 5.)
-- [ ] **Licensing.** If you are paid to build on other people's property,
-      find out what Michigan requires for that work before step 5 offers it.
-- [ ] **Insurance for visitors.** Check your homeowner's policy covers people
-      coming to see the yard on business.
-- [ ] **Where inquiries go.** Settings → Yard site. Blank sends them to the
-      admin email.
-
-## The yard page
-
-- [ ] Two or three sentences: who you are, how long you've been in Ann Arbor,
-      what got you started. Plain beats polished.
-- [ ] Check the list of what's running, and add what's missing.
-- [ ] Anything else that failed or surprised you. People trust this paragraph
-      more than any other.
-
-## Visit page
-
-- [ ] How long a visit runs, how many people at once, kids and dogs, any fee.
-
-## Systems
-
-- [ ] **Aquaponics:** what went wrong with the fingerlings at the start, and
-      what fixed it. Where it runs in winter, and how the water stays warm.
-- [ ] **Costs:** every "Materials, roughly" figure is the simulator's
-      estimate. Replace it with what you actually paid where you know.
-- [ ] **The seven drafts** — hanging peppers, felt grow bags, worm tea, rain
-      garden, rain tank, bucket drip, trellises. For each one that is in your
-      yard: set "In this yard" in the sidebar and publish. Leave the rest as
-      drafts, or delete them.
-
-## Journal (six drafts)
-
-- [ ] Read each one before publishing; they're written in your voice.
-- [ ] **Biochar:** how you made the char (kiln, cone pit, barrel?) and how long
-      it soaked.
-- [ ] **Hanging peppers:** check every number against your feeding log.
-- [ ] Delete WordPress's "Hello world!" post.
+- [ ] **Statuses.** Connect the simulator to the site (Site tab → Website,
+      with the address and key from WordPress → Settings → Yard site). Every
+      status you set there then shows on the site, and anything you mark as
+      tested is published.
+- [ ] **Photos.** One per system, as its featured image (shot list below).
+- [ ] **Licensing.** You'll build for people: find out what Michigan requires
+      for paid work on someone else's property.
+- [ ] **Insurance.** Check your homeowner's policy covers visitors who come on
+      business.
+- [ ] **Inquiries.** Send a test through the form, and check it arrives by
+      email as well as under Inquiries.
+- [ ] **Articles.** Six drafts under Posts. Read and publish them; check the
+      hanging peppers numbers against your feeding log first.
+- [ ] **"Hello world!"** WordPress's sample post — delete it.
 
 ## Photos
 
-The site will not persuade anyone without pictures of the real thing. Set
-each as the system's or article's **featured image**.
-
-- Landscape, at least 1600 px wide. The menu crops to 4:3, so keep the
-  subject in the middle.
-- Overcast daylight beats bright sun.
-- Nothing that gives away the address: house numbers, street signs, the car's
-  plate, the front of the house.
+Landscape, at least 1600 px wide, subject in the middle (the menu crops to
+4:3). Overcast light beats sun. Nothing that gives the address away.
 
 | For | Shot |
 |---|---|
 | Hot composter | The bin, lid open, with the thermometer reading in frame |
-| Biochar | Crushed char in a hand; the tote mid-charge |
+| Biochar | The kiln; crushed char in a hand; the tote mid-charge |
 | Aquaponics | The whole IBC system; a close-up of the grow bed |
 | Nettle feed | The contained patch; the bucket with its weight in place |
 | Banana peel tea | The jar, peels held under |

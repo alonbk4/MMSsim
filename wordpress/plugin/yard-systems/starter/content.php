@@ -14,6 +14,7 @@
 defined( 'ABSPATH' ) || exit;
 
 list( $p, $h, $ul, $you ) = require __DIR__ . '/markup.php';
+$answer = require __DIR__ . '/answers.php';
 
 return array(
 
@@ -49,9 +50,9 @@ return array(
 			'order'   => 10,
 			'excerpt' => 'One Ann Arbor yard, the systems running in it, and what happened when each one was tried.',
 			'content' =>
-				$p( $you( 'Two or three sentences on who you are, how long you’ve been in Ann Arbor, and what got you started on this yard. Plain is better than polished.' ) )
+				$p( $answer['story'] )
 				. $h( 'What’s running here' )
-				. $p( 'An insulated hot composter fed by the kitchen. Biochar, made from woody waste and soaked until it is ready for soil. An aquaponics system built in an IBC tote, whose water ends up feeding half of the others. A nettle patch for fermented plant feed. Hanging peppers on a timed drip. ' . $you( 'Check this list against the yard and add what’s missing.' ) )
+				. $p( $answer['running'] )
 				. $p( 'Each one is on the <a href="/systems/">systems page</a> with how it has actually done here.' )
 				. $h( 'How it fits together' )
 				. $p( 'Very little here works alone. Each system runs on something another one throws away:' )
@@ -69,7 +70,7 @@ return array(
 				. $p( 'When something works here, it gets marked as working. When it fails, that is recorded too. A failure is the one thing no book about someone else’s garden can tell you.' )
 				. $h( 'What went wrong' )
 				. $p( 'In August 2026 the first nettle ferment and the first banana peel tea both floated, grew a mat of mold, and went onto the compost heap. The second batch of each was weighted under the water and worked. The fix was a weight. It is written up on both systems, because it is the most useful thing I learned all summer.' )
-				. $p( $you( 'Anything else that failed or surprised you. This is the paragraph people trust the most.' ) ),
+				. $p( $answer['surprise'] ),
 		),
 
 		'principles'   => array(
@@ -104,9 +105,9 @@ return array(
 					array(
 						'<strong>Send a note.</strong> Use the form below. Tell me about the place, and tick anything from the <a href="/systems/">systems menu</a> that caught your eye.',
 						'<strong>Come and see mine, if you like.</strong> The systems are running in my yard, and seeing them is better than any photo. <a href="/visit/">Visits</a> are by appointment.',
-						'<strong>I walk your yard.</strong> Sun and shade through the year, where the water goes, the soil, what is already there, and what has been a headache. ' . $you( 'What this visit costs, or that the first one is free. Publishing a price filters out people who aren’t serious and reassures the ones who are.' ),
+						'<strong>I walk your yard.</strong> Sun and shade through the year, where the water goes, the soil, what is already there, and what has been a headache. ' . $answer['first_visit'],
 						'<strong>You get a short plan.</strong> Which systems fit, where they go, what they cost, and how much of your time they will take each week.',
-						'<strong>We build it.</strong> ' . $you( 'Say what you build yourself and what you teach the owner to build. If you install for pay, check what Michigan licensing that needs first.' ),
+						'<strong>We build it.</strong> ' . $answer['build'],
 					),
 					true
 				)
@@ -134,7 +135,7 @@ return array(
 						'Visits are by appointment. Send a note through the <a href="/work-with-me/#inquiry">inquiry form</a> and tick “See your yard and the systems in person.”',
 						'I will suggest a time, and send the address with the confirmation. It is a home as well as a demonstration, so the address isn’t published.',
 						'Wear shoes you don’t mind getting muddy.',
-						$you( 'How long a visit runs, how many people at once, whether kids and dogs are welcome, and whether there is a fee.' ),
+						$answer['visits'],
 					)
 				)
 				. $h( 'What you will see' )
@@ -154,6 +155,7 @@ return array(
 
 		array(
 			'slug'     => 'hot-composter',
+			'sim'      => 'aerobin',
 			'title'    => 'Insulated hot composter',
 			'category' => 'soil',
 			'tier'     => 'works',
@@ -185,6 +187,7 @@ return array(
 
 		array(
 			'slug'     => 'biochar',
+			'sim'      => 'biochar-kiln',
 			'title'    => 'Biochar, made and charged',
 			'category' => 'soil',
 			'tier'     => 'works',
@@ -199,7 +202,7 @@ return array(
 			),
 			'content'  =>
 				$h( 'What happened here' )
-				. $p( 'I made a batch in August 2026, crushed it, and charged it in a 27-gallon tote with diluted urine and water from the aquaponics tank. Then it went into the hot composter.' )
+				. $p( $answer['biochar_system'] )
 				. $h( 'The step people skip' )
 				. $p( 'Raw char is mostly surface area, and empty surface area pulls nitrogen and water out of whatever it touches. Put it straight on a bed and the bed goes backwards for a season. Two to four weeks soaking in something rich — urine, compost tea, fish water — fills it up first. After that, the same property makes it a reservoir: it holds nutrients that would otherwise wash out of the soil.' )
 				. $h( 'Buckthorn' )
@@ -209,6 +212,7 @@ return array(
 
 		array(
 			'slug'     => 'aquaponics',
+			'sim'      => 'aquaponics',
 			'title'    => 'IBC aquaponics',
 			'category' => 'food',
 			'tier'     => 'works',
@@ -218,11 +222,12 @@ return array(
 				'ys_cost'   => 'Roughly $300–650, mostly the pump, media and fish',
 				'ys_space'  => 'About 2 ft² of floor for every 1 ft² of grow bed, near power',
 				'ys_upkeep' => 'Feeding and a look every day; water tests weekly',
+				'ys_season' => $answer['aquaponics_season'],
 				'ys_fits'   => 'Households who are home most days and enjoy tending something',
 			),
 			'content'  =>
 				$h( 'What happened here' )
-				. $p( 'It had a rough start with the fingerlings. By June 2026 it was stable and has run reliably since. ' . $you( 'Say what went wrong at the start and what fixed it — that’s the part a buyer most needs.' ) )
+				. $p( $answer['aquaponics_start'] )
 				. $p( 'Its water does more work than the fish do. It is the base for worm tea, the soak that charges the biochar, and what wets each new load in the hot composter.' )
 				. $h( 'The honest part' )
 				. $ul(
@@ -230,13 +235,14 @@ return array(
 						'The pump is life support. A day without power kills the fish, and then the bacteria. Plan for outages.',
 						'Fish food is usually bought, so some of the fertility the system seems to make is really imported in the bag.',
 						'It needs someone every day. If you travel a lot, choose something else from the menu.',
-						$you( 'Where yours runs in winter, and how you keep the water warm enough.' ),
+						$answer['aquaponics_winter'],
 					)
 				),
 		),
 
 		array(
 			'slug'     => 'nettle-feed',
+			'sim'      => 'nettle-patch',
 			'title'    => 'Nettle patch & fermented feed',
 			'category' => 'soil',
 			'tier'     => 'partial',
@@ -265,6 +271,7 @@ return array(
 
 		array(
 			'slug'     => 'banana-peel-tea',
+			'sim'      => 'banana-peel-tea',
 			'title'    => 'Banana peel tea',
 			'category' => 'soil',
 			'tier'     => 'partial',
@@ -295,6 +302,7 @@ return array(
 
 		array(
 			'slug'     => 'hanging-peppers',
+			'sim'      => 'upside-down-planters',
 			'title'    => 'Hanging peppers on a timed drip',
 			'category' => 'food',
 			'tier'     => 'researched',
@@ -314,6 +322,7 @@ return array(
 
 		array(
 			'slug'     => 'felt-grow-bags',
+			'sim'      => 'felt-grow-bags',
 			'title'    => 'Felt grow bags',
 			'category' => 'food',
 			'tier'     => 'researched',
@@ -333,6 +342,7 @@ return array(
 
 		array(
 			'slug'     => 'worm-tea',
+			'sim'      => 'worm-tea-brewer',
 			'title'    => 'Worm bin & aerated worm tea',
 			'category' => 'soil',
 			'tier'     => 'unproven',
@@ -351,6 +361,7 @@ return array(
 
 		array(
 			'slug'     => 'rain-garden',
+			'sim'      => 'rain-garden',
 			'title'    => 'Rain garden',
 			'category' => 'water',
 			'tier'     => 'researched',
@@ -369,6 +380,7 @@ return array(
 
 		array(
 			'slug'     => 'rain-tank',
+			'sim'      => 'first-flush',
 			'title'    => 'Rain tank with first-flush diverter',
 			'category' => 'water',
 			'tier'     => 'researched',
@@ -388,6 +400,7 @@ return array(
 
 		array(
 			'slug'     => 'bucket-drip',
+			'sim'      => 'chapin-bucket',
 			'title'    => 'Gravity bucket drip',
 			'category' => 'water',
 			'tier'     => 'researched',
@@ -406,6 +419,7 @@ return array(
 
 		array(
 			'slug'     => 'trellises',
+			'sim'      => 'grow-trellis',
 			'title'    => 'Grow trellises',
 			'category' => 'food',
 			'tier'     => 'researched',

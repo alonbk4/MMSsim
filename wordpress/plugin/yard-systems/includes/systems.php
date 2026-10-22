@@ -119,7 +119,7 @@ function yard_systems_register_types() {
 		)
 	);
 
-	$string_meta = array_merge( array( 'ys_tier' ), array_keys( yard_systems_fact_fields() ) );
+	$string_meta = array_merge( array( 'ys_tier', 'ys_sim_id' ), array_keys( yard_systems_fact_fields() ) );
 	foreach ( $string_meta as $key ) {
 		register_post_meta(
 			'yard_system',
@@ -164,6 +164,12 @@ function yard_systems_render_meta_box( $post ) {
 			esc_html( $field['help'] )
 		);
 	}
+	printf(
+		'<p><label for="ys_sim_id"><strong>%1$s</strong></label><br /><input type="text" id="ys_sim_id" name="ys_sim_id" value="%2$s" style="width:100%%" /><span class="description">%3$s</span></p>',
+		esc_html__( 'Simulator system', 'yard-systems' ),
+		esc_attr( get_post_meta( $post->ID, 'ys_sim_id', true ) ),
+		esc_html__( 'The id of the system in the simulator this one follows, such as aerobin. Its status there sets the status here.', 'yard-systems' )
+	);
 	echo '<p class="description">' . esc_html__( 'The excerpt is the one-line summary on the menu card. Menu order (under Page Attributes) sets the order.', 'yard-systems' ) . '</p>';
 }
 
@@ -182,6 +188,9 @@ add_action( 'save_post_yard_system', function ( $post_id ) {
 		if ( isset( $_POST[ $key ] ) ) {
 			update_post_meta( $post_id, $key, sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) );
 		}
+	}
+	if ( isset( $_POST['ys_sim_id'] ) ) {
+		update_post_meta( $post_id, 'ys_sim_id', sanitize_key( wp_unslash( $_POST['ys_sim_id'] ) ) );
 	}
 } );
 

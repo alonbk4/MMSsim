@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DESIGN_VERSION } from './engine/defaults';
 import type { Design } from './engine/types';
 import { useApp, type Tab } from './state/store';
+import { startWebsiteSync } from './state/website';
 import { CatalogPane } from './ui/CatalogPane';
 import { Icon } from './ui/common';
 import { DesignPane } from './ui/DesignPane';
@@ -22,6 +23,9 @@ export default function App() {
   const setTab = useApp((s) => s.setTab);
   const siteName = useApp((s) => s.design.site.name);
   const [menu, setMenu] = useState(false);
+
+  // Results recorded here go to the yard's website, if one is connected.
+  useEffect(() => startWebsiteSync(), []);
 
   return (
     <div className="app">

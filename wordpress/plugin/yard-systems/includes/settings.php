@@ -69,9 +69,62 @@ function yard_systems_settings_page() {
 			<?php wp_nonce_field( 'yard_systems_starter' ); ?>
 			<?php submit_button( __( 'Install starter content', 'yard-systems' ), 'secondary' ); ?>
 		</form>
+
+		<hr />
+		<h2 id="sync"><?php esc_html_e( 'Simulator sync', 'yard-systems' ); ?></h2>
+		<?php if ( isset( $_GET['newkey'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification ?>
+			<div class="notice notice-success inline"><p><?php esc_html_e( 'New key made. The old one no longer works; paste this one into the simulator.', 'yard-systems' ); ?></p></div>
+		<?php endif; ?>
+		<p><?php esc_html_e( 'The simulator sends each system’s status here whenever you change it. A system marked as tested in your yard is published; its badge follows the simulator from then on.', 'yard-systems' ); ?></p>
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Website address', 'yard-systems' ); ?></th>
+				<td><input type="text" readonly class="regular-text code" value="<?php echo esc_attr( home_url( '/' ) ); ?>" onfocus="this.select()" /></td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Sync key', 'yard-systems' ); ?></th>
+				<td>
+					<input type="text" readonly class="regular-text code" value="<?php echo esc_attr( yard_systems_sync_key() ); ?>" onfocus="this.select()" />
+					<p class="description"><?php esc_html_e( 'Paste both into the simulator: Site tab → Website. The key can change the statuses shown here and nothing else.', 'yard-systems' ); ?></p>
+				</td>
+			</tr>
+		</table>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="yard_systems_new_key" />
+			<?php wp_nonce_field( 'yard_systems_new_key' ); ?>
+			<?php submit_button( __( 'Make a new key', 'yard-systems' ), 'secondary', 'submit', false ); ?>
+		</form>
+
+		<h3><?php esc_html_e( 'Which simulator system each one follows', 'yard-systems' ); ?></h3>
+		<table class="widefat striped" style="max-width:52rem">
+			<thead><tr><th><?php esc_html_e( 'System', 'yard-systems' ); ?></th><th><?php esc_html_e( 'Simulator id', 'yard-systems' ); ?></th><th><?php esc_html_e( 'In this yard', 'yard-systems' ); ?></th><th><?php esc_html_e( 'Status', 'yard-systems' ); ?></th></tr></thead>
+			<tbody>
+			<?php
+			$systems = get_posts( array( 'post_type' => 'yard_system', 'post_status' => array( 'publish', 'draft', 'pending', 'private' ), 'posts_per_page' => 200, 'orderby' => 'menu_order', 'order' => 'ASC' ) );
+			foreach ( $systems as $system ) :
+				?>
+				<tr>
+					<td><a href="<?php echo esc_url( get_edit_post_link( $system->ID ) ); ?>"><?php echo esc_html( get_the_title( $system ) ); ?></a></td>
+					<td><code><?php echo esc_html( get_post_meta( $system->ID, 'ys_sim_id', true ) ?: '—' ); ?></code></td>
+					<td><?php echo esc_html( yard_systems_tiers()[ yard_systems_tier( $system->ID ) ]['label'] ); ?></td>
+					<td><?php echo esc_html( get_post_status_object( $system->post_status )->label ); ?></td>
+				</tr>
+			<?php endforeach; ?>
+			</tbody>
+		</table>
 	</div>
 	<?php
 }
+
+add_action( 'admin_post_yard_systems_new_key', function () {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Not allowed.', 'yard-systems' ) );
+	}
+	check_admin_referer( 'yard_systems_new_key' );
+	yard_systems_sync_key( true );
+	wp_safe_redirect( admin_url( 'options-general.php?page=yard-systems&newkey=1#sync' ) );
+	exit;
+} );
 
 add_action( 'admin_post_yard_systems_starter', function () {
 	if ( ! current_user_can( 'manage_options' ) ) {

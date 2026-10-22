@@ -15,6 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 list( $p, $h, $ul, $you ) = require __DIR__ . '/markup.php';
+$answer = require __DIR__ . '/answers.php';
 
 $ask = function ( $lead ) use ( $p ) {
 	return $p( $lead . ' <a href="/work-with-me/">Tell me about your yard</a>.' );
@@ -145,7 +146,7 @@ return array(
 				$p( 'Biochar is charcoal made for the soil: wood heated with too little air to burn completely, leaving a skeleton of carbon full of tiny pores. In the ground it holds water and nutrients that would otherwise wash through, and it lasts for decades.' )
 				. $p( 'How much it helps depends on the soil. The dramatic results come from poor, weathered soils; on good loam the effect can be small. And the part the pitch usually leaves out is that fresh char is empty, and empty char pulls nitrogen and water out of whatever it touches. Dig raw char into a bed and the bed goes backwards for a season.' )
 				. $h( 'Charging it' )
-				. $p( 'The fix is to fill the char before it reaches the soil. In August 2026 I made a batch, crushed it, and soaked it in a 27-gallon tote with diluted urine and water from my aquaponics tank. Then it went into the hot composter, where it keeps soaking up nutrients as the compost breaks down. ' . $you( 'How you made the char (kiln, cone pit, barrel?) and how long it soaked.' ) )
+				. $p( $answer['biochar_article'] )
 				. $ul(
 					array(
 						'Crush it first. Smaller pieces charge faster and mix in better.',

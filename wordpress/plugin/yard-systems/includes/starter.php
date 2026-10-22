@@ -82,6 +82,7 @@ function yard_systems_install_starter() {
 		++$created;
 		wp_set_object_terms( $id, $system['category'], 'system_category' );
 		update_post_meta( $id, 'ys_tier', $system['tier'] );
+		update_post_meta( $id, 'ys_sim_id', $system['sim'] );
 		foreach ( $system['facts'] as $key => $value ) {
 			update_post_meta( $id, $key, $value );
 		}
