@@ -26,6 +26,10 @@ on:
         description: 'Also add any missing starter content (never overwrites)'
         type: boolean
         default: false
+      diagnose:
+        description: 'Also print how caching is set up on the server'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -66,6 +70,7 @@ jobs:
       PORT: ${{ secrets.STAGING_SSH_PORT }}
       WP_PATH: ${{ secrets.STAGING_WP_PATH }}
       STARTER: ${{ inputs.starter }}
+      DIAGNOSE: ${{ inputs.diagnose }}
     steps:
       - uses: actions/checkout@v4
 
@@ -172,3 +177,13 @@ jobs:
             wp eval 'do_action( \"wphb_clear_page_cache\" );' || true
             rm -rf wp-content/wphb-cache/cache
             echo \"Page caches cleared. Active plugins: \$(wp plugin list --status=active --field=name | tr '\n' ' ')\""
+
+          if [ "$DIAGNOSE" = "true" ]; then
+            remote "cd '$WP_PATH'
+              echo '--- advanced-cache.php'; head -c 700 wp-content/advanced-cache.php 2>/dev/null; echo
+              echo '--- cache folders'; find wp-content -maxdepth 4 -type d -iname '*cache*' 2>/dev/null | head -20
+              echo '--- cached copies of the home page'; find wp-content -maxdepth 6 -name 'index*.htm*' -path '*cache*' 2>/dev/null | head -10
+              echo '--- hummingbird page cache settings'; wp option get wphb_settings --format=json 2>/dev/null | tr ',' '\n' | grep -iE 'page_cache|cache_|enabled|hosting|server' | head -30
+              echo '--- hummingbird commands'; wp help hummingbird 2>&1 | head -30
+              echo '--- hosting commands'; wp help hosting 2>&1 | head -15" || true
+          fi
