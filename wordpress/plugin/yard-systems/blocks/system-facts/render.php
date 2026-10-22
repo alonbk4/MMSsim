@@ -19,10 +19,11 @@ $tier  = yard_systems_tier( $post_id );
 $tiers = yard_systems_tiers();
 ?>
 <aside <?php echo get_block_wrapper_attributes( array( 'class' => 'ys-facts ys-facts--' . $tier ) ); ?>>
-	<p class="ys-facts__tier">
+	<p class="ys-facts__label"><?php esc_html_e( 'In this yard', 'yard-systems' ); ?></p>
+	<div class="ys-facts__tier">
 		<?php echo yard_systems_tier_badge( $post_id ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped inside ?>
-		<span><?php echo esc_html( $tiers[ $tier ]['long'] ); ?></span>
-	</p>
+		<p><?php echo esc_html( $tiers[ $tier ]['long'] ); ?></p>
+	</div>
 	<dl class="ys-facts__list">
 		<?php foreach ( yard_systems_fact_fields() as $key => $field ) : ?>
 			<?php $value = get_post_meta( $post_id, $key, true ); ?>

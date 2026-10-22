@@ -1,0 +1,14 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "yard-systems/system-art",
+	"title": "System picture",
+	"category": "widgets",
+	"icon": "format-image",
+	"description": "The current system's featured photo, or its illustrated mark until it has one.",
+	"usesContext": [ "postId", "postType" ],
+	"supports": { "html": false, "align": [ "wide", "full" ] },
+	"textdomain": "yard-systems",
+	"editorScript": "yard-systems-editor",
+	"render": "file:./render.php"
+}

@@ -18,7 +18,7 @@ add_action( 'init', function () {
 		true
 	);
 
-	foreach ( array( 'system-menu', 'system-facts', 'inquiry-form' ) as $block ) {
+	foreach ( array( 'system-menu', 'system-facts', 'system-art', 'inquiry-form' ) as $block ) {
 		register_block_type( YARD_SYSTEMS_DIR . 'blocks/' . $block );
 	}
 } );
@@ -34,9 +34,9 @@ add_action( 'wp_enqueue_scripts', function () {
 
 add_action( 'wp_footer', function () {
 	printf(
-		'<div class="ys-listbar" hidden><a href="%s"><span class="ys-listbar__count"></span> %s</a></div>',
+		'<div class="ys-listbar" hidden><a href="%s"><span class="ys-listbar__n"></span><span class="ys-listbar__count"></span><span class="ys-listbar__go">%s</span></a></div>',
 		esc_url( yard_systems_inquiry_url() ),
-		esc_html__( '— ask about them →', 'yard-systems' )
+		esc_html__( 'Ask about them →', 'yard-systems' )
 	);
 } );
 
@@ -55,7 +55,7 @@ function yard_systems_inquiry_url() {
 function yard_systems_tier_badge( $post_id ) {
 	$tier = yard_systems_tier( $post_id );
 	return sprintf(
-		'<span class="ys-tier ys-tier--%s">%s</span>',
+		'<span class="ys-tier ys-tier--%s"><span class="ys-tier__dot" aria-hidden="true"></span>%s</span>',
 		esc_attr( $tier ),
 		esc_html( yard_systems_tiers()[ $tier ]['label'] )
 	);
@@ -69,7 +69,7 @@ function yard_systems_want_button( $post_id ) {
 		'<button type="button" class="ys-want" data-id="%d" data-title="%s" aria-pressed="false"><span class="ys-want__add">%s</span><span class="ys-want__added">%s</span></button>',
 		(int) $post_id,
 		esc_attr( get_the_title( $post_id ) ),
-		esc_html__( '+ Add to my list', 'yard-systems' ),
-		esc_html__( '✓ On my list', 'yard-systems' )
+		esc_html__( 'Add to my list', 'yard-systems' ),
+		esc_html__( 'On my list', 'yard-systems' )
 	);
 }

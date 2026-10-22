@@ -1,0 +1,43 @@
+<svg class="wy-loop" viewBox="-14 0 708 590" role="img" aria-labelledby="wy-loop-t wy-loop-d" xmlns="http://www.w3.org/2000/svg">
+<title id="wy-loop-t">How the yard’s systems feed each other</title>
+<desc id="wy-loop-d">Kitchen scraps go to the hot composter, and its compost goes to the beds. Cleared buckthorn becomes biochar, which is charged and goes into the composter. Water from the aquaponics tank charges the biochar and makes worm tea for the beds. The nettle patch makes liquid feed for the beds. The beds feed the kitchen.</desc>
+<defs><marker id="wy-arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1.5 8 5 1 8.5" fill="none" stroke="context-stroke" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<circle class="wy-loop__orbit" cx="340" cy="300" r="205"/>
+<path class="wy-loop__flow" d="M388.5 100.8A205 205 0 0 1 488.2 158.4" marker-end="url(#wy-arrow)"/>
+<path class="wy-loop__flow" d="M536.8 357.6A205 205 0 0 0 536.8 242.4" marker-end="url(#wy-arrow)"/>
+<path class="wy-loop__flow" d="M388.5 499.2A205 205 0 0 0 488.2 441.6" marker-end="url(#wy-arrow)"/>
+<path class="wy-loop__flow" d="M211.5 402.5L468.5 402.5" marker-end="url(#wy-arrow)"/>
+<path class="wy-loop__flow" d="M475.1 222.0L398.0 266.5" marker-end="url(#wy-arrow)"/>
+<path class="wy-loop__flow" d="M204.9 222.0L282.0 266.5" marker-end="url(#wy-arrow)"/>
+<path class="wy-loop__flow" d="M204.9 378.0L282.0 333.5" marker-end="url(#wy-arrow)"/>
+<path class="wy-loop__flow" d="M340.0 233.0L340.0 144.0" marker-end="url(#wy-arrow)"/>
+<text class="wy-loop__edge" x="453.5" y="107.4" text-anchor="start">scraps</text>
+<text class="wy-loop__edge" x="567.0" y="304.0" text-anchor="start">charged char</text>
+<text class="wy-loop__edge" x="453.5" y="500.6" text-anchor="start">wood</text>
+<text class="wy-loop__edge" x="340.0" y="419.5" text-anchor="middle">fish water</text>
+<text class="wy-loop__edge" x="440.4" y="230.0" text-anchor="middle">compost</text>
+<text class="wy-loop__edge" x="239.6" y="230.0" text-anchor="middle">feed</text>
+<text class="wy-loop__edge" x="234.2" y="378.1" text-anchor="middle">worm tea</text>
+<text class="wy-loop__edge" x="350.0" y="192.5" text-anchor="start">harvest</text>
+<circle class="wy-loop__node" cx="340.0" cy="95.0" r="40"/>
+<g class="wy-loop__glyph" transform="translate(319.0 74.0) scale(1.7500)" stroke-width="1.03"><rect x="4" y="7" width="16" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M9 12.5a3.2 3.2 0 0 1 5.6-1.6" /><path d="M14.6 9.4v1.8h-1.8" /><path d="M15 15a3.2 3.2 0 0 1-5.6 1.6" /><path d="M9.4 18v-1.8h1.8" /></g>
+<text class="wy-loop__label" y="37.0" text-anchor="middle"><tspan x="340.0" dy="0">Kitchen</tspan></text>
+<circle class="wy-loop__node" cx="517.5" cy="197.5" r="40"/>
+<g class="wy-loop__glyph" transform="translate(496.5 176.5) scale(1.7500)" stroke-width="1.03"><rect x="5" y="6" width="14" height="15" rx="1.6" /><path d="M8 6V4h8v2" /><path d="M12 9v9" /><path d="M12 11l-2.6-1.6M12 14l2.6-1.6M12 17l-2.6-1.6" /></g>
+<text class="wy-loop__label" y="168.5" text-anchor="start"><tspan x="562.6" dy="0">Hot</tspan><tspan x="562.6" dy="1.2em">composter</tspan></text>
+<circle class="wy-loop__node" cx="517.5" cy="402.5" r="40"/>
+<g class="wy-loop__glyph" transform="translate(496.5 381.5) scale(1.7500)" stroke-width="1.03"><path d="M6 20 9 8h6l3 12z" /><path d="M10 8V5h4v3" /><path d="M8 15h8" /></g>
+<text class="wy-loop__label" y="432.5" text-anchor="start"><tspan x="562.6" dy="0">Biochar</tspan></text>
+<circle class="wy-loop__node" cx="340.0" cy="505.0" r="40"/>
+<g class="wy-loop__glyph" transform="translate(319.0 484.0) scale(1.7500)" stroke-width="1.03"><path d="M6 21V9M12 21V5M18 21v-9" /><path d="M6 9 3 6M6 9l3-3M12 5 9 2M12 5l3-3M18 12l-3-3M18 12l3-3" /></g>
+<text class="wy-loop__label" y="571.0" text-anchor="middle"><tspan x="340.0" dy="0">Buckthorn</tspan></text>
+<circle class="wy-loop__node" cx="162.5" cy="402.5" r="40"/>
+<g class="wy-loop__glyph" transform="translate(141.5 381.5) scale(1.7500)" stroke-width="1.03"><path d="M3 12c3.6-4.4 9-6 13-4l4-2-1.4 5.4L20 17l-4-2c-4 2-9.4.4-13-3z" /><circle cx="8" cy="10.6" r=".8" fill="currentColor" stroke="none" /></g>
+<text class="wy-loop__label" y="432.5" text-anchor="end"><tspan x="117.4" dy="0">Aquaponics</tspan></text>
+<circle class="wy-loop__node" cx="162.5" cy="197.5" r="40"/>
+<g class="wy-loop__glyph" transform="translate(141.5 176.5) scale(1.7500)" stroke-width="1.03"><path d="M12 21V8" /><path d="M12 8C8.5 7.4 6.6 5 6.4 2.6 9.6 2.8 11.8 4.8 12 8z" /><path d="M12 14c3.5-.6 5.4-3 5.6-5.4-3.2.2-5.4 2.2-5.6 5.4z" /><path d="M8 5.4 7 6M10 7l-.8.8M16 11.4l1 .6M14 12.6l.9.7" /></g>
+<text class="wy-loop__label" y="168.5" text-anchor="end"><tspan x="117.4" dy="0">Nettle</tspan><tspan x="117.4" dy="1.2em">patch</tspan></text>
+<circle class="wy-loop__hub" cx="340" cy="300" r="58"/>
+<g class="wy-loop__glyph wy-loop__glyph--hub" transform="translate(318.0 268.0) scale(1.8333)" stroke-width="0.98"><path d="M20 4c0 9-5.5 14-13 14 0-8 5-14 13-14z" /><path d="M4 20c4-4 8-7 12-9" /></g>
+<text class="wy-loop__hublabel" x="340" y="332" text-anchor="middle">The beds</text>
+</svg>

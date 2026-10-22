@@ -1,7 +1,7 @@
 /*
 Theme Name: Working Yard
-Description: A plain, readable block theme for a yard-systems site: the story, the systems menu, the journal and the inquiry form. Pairs with the Yard Systems plugin.
-Version: 0.1.0
+Description: An editorial, field-notebook block theme for a yard-systems site: the story, the systems menu, the journal and the inquiry form. Pairs with the Yard Systems plugin.
+Version: 0.2.0
 Requires at least: 6.6
 Requires PHP: 7.4
 License: GNU General Public License v2 or later
@@ -9,42 +9,1162 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: working-yard
 */
 
-/* Most styling is in theme.json. This is what theme.json cannot express. */
+/*
+ * Everything theme.json can say lives there. This file is the rest: the
+ * bands and their textures, the hero and its drawing, the editorial details.
+ * Fonts are Fraunces (display), Instrument Sans (text) and IBM Plex Mono
+ * (labels and numbers), all bundled under the SIL Open Font License.
+ */
 
-a:where(:not(.wp-element-button)):focus-visible {
-	outline: 2px solid var(--wp--preset--color--accent);
-	outline-offset: 2px;
-	border-radius: 2px;
+:root {
+	--wy-paper: var(--wp--preset--color--base);
+	--wy-sand: var(--wp--preset--color--panel);
+	--wy-sage: var(--wp--preset--color--sage);
+	--wy-line: var(--wp--preset--color--line);
+	--wy-ink: var(--wp--preset--color--contrast);
+	--wy-muted: var(--wp--preset--color--muted);
+	--wy-forest: var(--wp--preset--color--forest);
+	--wy-moss: var(--wp--preset--color--accent);
+	--wy-clay: var(--wp--preset--color--clay);
+	--wy-straw: var(--wp--preset--color--straw);
+	--wy-display: var(--wp--preset--font-family--heading);
+	--wy-mono: var(--wp--preset--font-family--mono);
+	--wy-radius: 18px;
+	--wy-ease: cubic-bezier(.2, .7, .2, 1);
+	--wy-header-h: 76px;
+}
+
+/* ---------- base ---------- */
+
+html {
+	scroll-behavior: smooth;
+	scroll-padding-top: calc(var(--wy-header-h) + 16px);
+}
+
+body {
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-rendering: optimizeLegibility;
+}
+
+/* A faint paper grain over everything, so flat colour reads as material. */
+body::after {
+	content: "";
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: 100;
+	opacity: .07;
+	mix-blend-mode: multiply;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+	background: var(--wy-straw);
+	color: var(--wy-ink);
+}
+
+h1, h2, h3, h4,
+.wp-block-site-title,
+.wp-block-post-title {
+	font-variation-settings: "SOFT" 50, "WONK" 0;
+	text-wrap: balance;
+}
+
+p {
+	text-wrap: pretty;
+}
+
+a {
+	text-underline-offset: .2em;
+	text-decoration-thickness: 1px;
+	transition: color .2s var(--wy-ease);
+}
+
+:where(a, button, input, select, textarea, summary):focus-visible {
+	outline: 2px solid var(--wy-clay);
+	outline-offset: 3px;
+	border-radius: 4px;
+}
+
+/* Bands sit edge to edge: no block gap between the header, the page's own
+   bands, the closing band and the footer. */
+.wp-site-blocks > * + *,
+.wy-main > *,
+.wp-block-post-content > .alignfull {
+	margin-block: 0;
+}
+
+/* ---------- small type ---------- */
+
+.wy-eyebrow,
+.wy-arrow-link,
+.wp-block-post-terms,
+.wp-block-post-date {
+	font-family: var(--wy-mono);
+	font-size: .75rem;
+	font-weight: 500;
+	letter-spacing: .14em;
+	text-transform: uppercase;
 }
 
 .wy-eyebrow {
+	display: flex;
+	align-items: center;
+	gap: .75rem;
+	color: var(--wy-clay);
+	margin-bottom: 1.1rem;
+}
+
+.wy-eyebrow::before {
+	content: "";
+	width: 1.75rem;
+	height: 1px;
+	background: currentColor;
+	flex: none;
+}
+
+.wy-eyebrow a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.wy-arrow-link a {
+	color: var(--wy-ink);
+	text-decoration: none;
+	border-bottom: 1px solid currentColor;
+	padding-bottom: .25rem;
+}
+
+.wy-arrow-link a::after {
+	content: " →";
+	transition: margin .2s var(--wy-ease);
+}
+
+.wy-arrow-link a:hover::after {
+	margin-left: .3rem;
+}
+
+.wy-lead {
+	font-size: var(--wp--preset--font-size--large);
+	line-height: 1.5;
+	color: var(--wy-muted);
+	max-width: 40rem;
+}
+
+.wy-h-big {
+	font-size: clamp(2.1rem, 4.2vw, 3.5rem);
+	line-height: 1.04;
+	letter-spacing: -0.025em;
+	font-weight: 450;
+	margin-top: 0;
+	font-variation-settings: "SOFT" 70, "opsz" 144;
+}
+
+.wy-h-big em,
+.wy-display em {
+	font-style: italic;
+	font-variation-settings: "SOFT" 100, "WONK" 1, "opsz" 144;
+}
+
+.wy-empty {
+	font-family: var(--wy-display);
+	font-style: italic;
+	font-size: 1.35rem;
+	color: var(--wy-muted);
+}
+
+/* ---------- bands ---------- */
+
+.wy-section {
+	padding-block: var(--wp--preset--spacing--60);
+}
+
+.wy-band--sand {
+	background: var(--wy-sand);
+}
+
+.wy-band--forest,
+.wy-band--clay {
+	color: var(--wy-paper);
+}
+
+.wy-band--forest {
+	background: var(--wy-forest);
+}
+
+.wy-band--clay {
+	background: var(--wy-clay);
+}
+
+.wy-band--forest :where(h1, h2, h3, h4),
+.wy-band--clay :where(h1, h2, h3, h4) {
+	color: var(--wy-paper);
+}
+
+.wy-band--forest .wy-eyebrow,
+.wy-band--forest a:not(.wp-element-button) {
+	color: var(--wy-straw);
+}
+
+.wy-band--forest .wy-arrow-link a {
+	color: var(--wy-paper);
+}
+
+.wy-band--forest .wy-lead {
+	color: color-mix(in srgb, var(--wy-paper) 82%, transparent);
+}
+
+.wy-band--clay .wy-lead,
+.wy-band--clay p {
+	color: color-mix(in srgb, #fff 90%, transparent);
+}
+
+.wy-band--forest .wy-h-big em,
+.wy-band--forest .wy-display em {
+	color: var(--wy-straw);
+}
+
+/* Contour lines: one drawing, recoloured per band through a mask. */
+.wy-has-contours {
+	position: relative;
+	isolation: isolate;
+	overflow: hidden;
+}
+
+.wy-has-contours::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	background: currentColor;
+	opacity: .09;
+	-webkit-mask: url("assets/contours.svg") center / cover no-repeat;
+	mask: url("assets/contours.svg") center / cover no-repeat;
+	pointer-events: none;
+}
+
+.wy-band--forest.wy-has-contours::before {
+	background: var(--wy-straw);
+	opacity: .13;
+}
+
+.wy-band--clay.wy-has-contours::before {
+	background: #fff;
+	opacity: .14;
+}
+
+/* ---------- buttons ---------- */
+
+.wp-element-button,
+.wp-block-button__link {
+	transition: transform .2s var(--wy-ease), box-shadow .2s var(--wy-ease), background-color .2s var(--wy-ease), color .2s var(--wy-ease);
+}
+
+.wp-block-button__link:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 10px 24px -12px rgba(29, 42, 33, .55);
+}
+
+.wp-block-button.is-style-outline > .wp-block-button__link {
+	border: 1.5px solid currentColor;
+	padding: calc(.95rem - 1.5px) calc(1.6rem - 1.5px);
+}
+
+.wp-block-button.is-style-outline > .wp-block-button__link:hover {
+	background: var(--wy-ink);
+	border-color: var(--wy-ink);
+	color: var(--wy-paper);
+}
+
+.wy-band--forest .wp-block-button.is-style-outline > .wp-block-button__link {
+	color: var(--wy-paper);
+}
+
+.wy-band--forest .wp-block-button.is-style-outline > .wp-block-button__link:hover {
+	background: var(--wy-paper);
+	border-color: var(--wy-paper);
+	color: var(--wy-forest);
+}
+
+.wy-band--forest .wp-block-button:not(.is-style-outline) > .wp-block-button__link:hover {
+	background: var(--wy-straw);
+	color: var(--wy-ink);
+}
+
+.wy-btn-small > .wp-block-button__link {
+	padding: .7rem 1.2rem;
+	font-size: .925rem;
+}
+
+.wy-btn-paper > .wp-block-button__link {
+	background: var(--wy-paper);
+	color: var(--wy-ink);
+	padding: 1.1rem 1.9rem;
+	font-size: 1.05rem;
+}
+
+.wy-btn-paper > .wp-block-button__link:hover {
+	background: var(--wy-ink);
+	color: var(--wy-paper);
+}
+
+.wy-actions {
+	gap: .75rem;
+	margin-top: 2rem;
+}
+
+/* ---------- header ---------- */
+
+.wp-site-blocks > header.wp-block-template-part {
+	position: sticky;
+	top: 0;
+	z-index: 50;
+}
+
+.admin-bar .wp-site-blocks > header.wp-block-template-part {
+	top: var(--wp-admin--admin-bar--height, 32px);
+}
+
+.wy-header {
+	background: color-mix(in srgb, var(--wy-paper) 88%, transparent);
+	-webkit-backdrop-filter: saturate(140%) blur(14px);
+	backdrop-filter: saturate(140%) blur(14px);
+	border-bottom: 1px solid color-mix(in srgb, var(--wy-line) 70%, transparent);
+}
+
+.wy-header__bar {
+	min-height: var(--wy-header-h);
+	gap: 1.5rem;
+}
+
+.wy-brand {
+	gap: .65rem;
+	min-width: 0;
+}
+
+.wy-brand__mark,
+.wy-footer__brand {
+	display: inline-flex;
+	color: var(--wy-forest);
+	line-height: 0;
+}
+
+.wy-mark {
+	width: 38px;
+	height: 38px;
+	flex: none;
+	transition: transform .6s var(--wy-ease);
+}
+
+.wy-mark__leaf {
+	fill: var(--wy-straw);
+}
+
+.wy-brand:hover .wy-mark {
+	transform: rotate(-35deg);
+}
+
+.wy-brand .wp-block-site-title {
+	margin: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.wy-header__nav {
+	gap: 1.75rem;
+}
+
+.wy-nav .wp-block-navigation-item__content {
+	position: relative;
+	padding-block: .35rem;
+	color: var(--wy-ink);
+}
+
+.wy-nav .wp-block-navigation-item__content::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 1.5px;
+	background: var(--wy-clay);
+	transform: scaleX(0);
+	transform-origin: left;
+	transition: transform .25s var(--wy-ease);
+}
+
+.wy-nav .wp-block-navigation-item__content:hover::after,
+.wy-nav .current-menu-item > .wp-block-navigation-item__content::after {
+	transform: scaleX(1);
+}
+
+/* The phone menu: full-screen forest with big serif links. */
+.wy-nav .wp-block-navigation__responsive-container.is-menu-open {
+	background: var(--wy-forest);
+	color: var(--wy-paper);
+	padding: 1.5rem;
+}
+
+.wy-nav .wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation-item__content {
+	color: var(--wy-paper);
+	font-family: var(--wy-display);
+	font-size: 2.1rem;
+	font-weight: 450;
+}
+
+.wy-nav .wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__container {
+	gap: 1rem;
+}
+
+.wy-nav .wp-block-navigation__responsive-container-open svg,
+.wy-nav .wp-block-navigation__responsive-container-close svg {
+	width: 30px;
+	height: 30px;
+}
+
+@media (max-width: 560px) {
+	.wy-header .wy-header__cta {
+		display: none;
+	}
+}
+
+/* ---------- home: hero ---------- */
+
+.wy-hero {
+	padding-block: clamp(3.5rem, 8vw, 7rem) clamp(4rem, 9vw, 7.5rem);
+}
+
+.wy-hero__grid {
+	gap: clamp(2rem, 5vw, 5rem);
+}
+
+.wy-display {
+	font-size: var(--wp--preset--font-size--display);
+	font-weight: 420;
+	line-height: .98;
+	letter-spacing: -0.035em;
+	margin: 0;
+	font-variation-settings: "SOFT" 60, "opsz" 144;
+	color: var(--wy-paper);
+}
+
+.wy-display em {
+	position: relative;
+	color: var(--wy-straw);
+	white-space: nowrap;
+}
+
+/* A hand-drawn underline under the word that carries the pitch. */
+.wy-display em::after {
+	content: "";
+	position: absolute;
+	left: -2%;
+	right: -4%;
+	bottom: -.12em;
+	height: .22em;
+	background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 20' preserveAspectRatio='none'%3E%3Cpath d='M3 14C40 6 90 4 197 9' fill='none' stroke='%23e2b04a' stroke-width='4.5' stroke-linecap='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+
+.wy-hero .wy-lead {
+	margin-top: 1.75rem;
+	font-size: clamp(1.15rem, 1.6vw, 1.35rem);
+}
+
+.wy-hero .wy-eyebrow {
+	margin-bottom: 1.75rem;
+}
+
+.wy-loop-figure {
+	margin: 0 auto;
+	max-width: 600px;
+}
+
+.wy-loop-figure figcaption {
+	margin-top: .75rem;
+	text-align: center;
+	font-family: var(--wy-mono);
+	font-size: .75rem;
+	letter-spacing: .06em;
+	color: color-mix(in srgb, var(--wy-paper) 62%, transparent);
+}
+
+.wy-loop {
+	display: block;
+	width: 100%;
+	height: auto;
+	font-family: var(--wy-mono);
+	overflow: visible;
+}
+
+.wy-loop__orbit {
+	fill: none;
+	stroke: var(--wy-paper);
+	stroke-opacity: .12;
+	stroke-dasharray: 2 6;
+}
+
+.wy-loop__flow {
+	fill: none;
+	stroke: var(--wy-straw);
+	stroke-width: 1.6;
+	stroke-dasharray: 5 6;
+	stroke-linecap: round;
+	animation: wy-flow 1.6s linear infinite;
+}
+
+@keyframes wy-flow {
+	to { stroke-dashoffset: -22; }
+}
+
+.wy-loop__edge {
+	fill: var(--wy-straw);
+	font-size: 12px;
+	letter-spacing: .04em;
+	paint-order: stroke;
+	stroke: var(--wy-forest);
+	stroke-width: 6px;
+	stroke-linejoin: round;
+}
+
+.wy-loop__node {
+	fill: var(--wy-paper);
+	transition: fill .3s var(--wy-ease);
+}
+
+.wy-loop__glyph {
+	fill: none;
+	stroke: var(--wy-forest);
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.wy-loop__label {
+	fill: var(--wy-paper);
+	font-size: 12.5px;
+	font-weight: 500;
+	letter-spacing: .1em;
 	text-transform: uppercase;
-	letter-spacing: 0.08em;
+}
+
+.wy-loop__hub {
+	fill: var(--wy-straw);
+}
+
+.wy-loop__hublabel {
+	fill: var(--wy-forest);
+	font-family: var(--wy-display);
+	font-size: 15px;
+	font-weight: 600;
+}
+
+/* On a phone the drawing runs edge to edge and keeps only the names, at a
+   size that can still be read; the caption says what the arrows mean. */
+@media (max-width: 600px) {
+	.wy-loop-figure {
+		margin-inline: calc(-1 * var(--wp--style--root--padding-left, 16px)) calc(-1 * var(--wp--style--root--padding-right, 16px));
+	}
+
+	.wy-loop__edge {
+		display: none;
+	}
+
+	.wy-loop__label {
+		font-size: 18px;
+		letter-spacing: .03em;
+	}
+
+	.wy-loop__hublabel {
+		font-size: 19px;
+	}
+
+	.wy-loop-figure figcaption {
+		padding-inline: 16px;
+	}
+}
+
+/* ---------- home: numbers ---------- */
+
+.wy-stats {
+	border-bottom: 1px solid var(--wy-line);
+	padding-block: clamp(2.5rem, 5vw, 4rem);
+}
+
+.wy-stats__list {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 2rem;
+	margin: 0;
+}
+
+.wy-stats__list > div {
+	border-left: 1px solid var(--wy-line);
+	padding-left: 1.4rem;
+}
+
+.wy-stats__list dt {
+	font-family: var(--wy-display);
+	font-size: clamp(2.6rem, 5vw, 4.2rem);
+	font-weight: 380;
+	line-height: 1;
+	letter-spacing: -0.03em;
+	color: var(--wy-forest);
+	font-variation-settings: "SOFT" 80, "opsz" 144;
+}
+
+.wy-stats__list dt span {
+	color: var(--wy-clay);
+	font-size: .55em;
+	vertical-align: .55em;
+	margin-left: .05em;
+}
+
+.wy-stats__list dd {
+	margin: .8rem 0 0;
+	max-width: 15rem;
+	font-size: .95rem;
+	line-height: 1.45;
+	color: var(--wy-muted);
+}
+
+@media (max-width: 781px) {
+	.wy-stats__list {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		row-gap: 2.25rem;
+	}
+}
+
+/* ---------- home: sections ---------- */
+
+.wy-split {
+	gap: clamp(2rem, 6vw, 6rem);
+}
+
+.wy-split__text {
+	padding-top: 2.3rem;
+}
+
+@media (max-width: 781px) {
+	.wy-split__text {
+		padding-top: 0;
+	}
+}
+
+.wy-split__text > :first-child {
+	margin-top: 0;
+}
+
+.wy-section__head {
+	margin-bottom: clamp(2rem, 4vw, 3rem);
+	gap: 1rem 2rem;
+}
+
+.wy-section__head .wy-h-big {
+	margin-bottom: 0;
+	max-width: 22ch;
 }
 
 .wy-steps {
 	counter-reset: wy-step;
+	gap: clamp(1.5rem, 3vw, 2.75rem);
 }
-.wy-steps > .wp-block-column {
+
+.wy-step {
 	counter-increment: wy-step;
+	border-top: 1.5px solid var(--wy-ink);
+	padding-top: 1.5rem;
 }
-.wy-steps > .wp-block-column::before {
-	content: counter(wy-step);
-	display: inline-grid;
-	place-items: center;
-	width: 2.2rem;
-	height: 2.2rem;
-	border-radius: 50%;
-	background: var(--wp--preset--color--accent);
-	color: var(--wp--preset--color--on-accent);
-	font-weight: 700;
+
+.wy-step::before {
+	content: counter(wy-step, decimal-leading-zero);
+	display: block;
+	font-family: var(--wy-display);
+	font-style: italic;
+	font-size: 3.4rem;
+	line-height: 1;
+	font-weight: 350;
+	color: var(--wy-clay);
+	font-variation-settings: "SOFT" 100, "WONK" 1, "opsz" 144;
+	margin-bottom: 1.25rem;
+}
+
+.wy-step h3 {
+	margin-top: 0;
+	font-size: 1.5rem;
+}
+
+.wy-step p {
+	color: var(--wy-muted);
+}
+
+/* The record: a field log, one line per result. */
+.wy-ledger {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	counter-reset: wy-ledger;
+}
+
+.wy-ledger li {
+	display: grid;
+	grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+	align-items: start;
+	gap: .5rem 1.5rem;
+	padding: 1.25rem 0;
+	border-top: 1px solid color-mix(in srgb, var(--wy-paper) 16%, transparent);
+}
+
+.wy-ledger li:last-child {
+	border-bottom: 1px solid color-mix(in srgb, var(--wy-paper) 16%, transparent);
+}
+
+.wy-ledger__date {
+	font-family: var(--wy-mono);
+	font-size: .75rem;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	color: var(--wy-straw);
+	padding-top: .35rem;
+}
+
+.wy-ledger__entry {
+	color: color-mix(in srgb, var(--wy-paper) 76%, transparent);
+	font-size: .975rem;
+	line-height: 1.5;
+}
+
+.wy-ledger__entry strong {
+	display: block;
+	font-family: var(--wy-display);
+	font-weight: 500;
+	font-size: 1.3rem;
+	color: var(--wy-paper);
+	margin-bottom: .2rem;
+}
+
+@media (max-width: 640px) {
+	.wy-ledger li {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+/* ---------- journal cards ---------- */
+
+.wy-posts .wp-block-post-template {
+	gap: clamp(1.5rem, 3vw, 2.5rem);
 }
 
 .wy-post-card {
-	border-top: 1px solid var(--wp--preset--color--line);
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: .65rem;
+	border-top: 1.5px solid var(--wy-ink);
+	padding-top: 1.25rem;
 }
 
+.wy-post-card .wp-block-post-terms a {
+	color: var(--wy-clay);
+	text-decoration: none;
+}
 
-.wy-plain-list {
+.wy-post-card .wp-block-post-title {
+	margin: 0;
+	font-size: 1.55rem;
+	line-height: 1.15;
+	font-weight: 500;
+}
+
+.wy-post-card .wp-block-post-title a {
+	color: var(--wy-ink);
+	text-decoration: none;
+	background: linear-gradient(currentColor, currentColor) 0 100% / 0 1.5px no-repeat;
+	transition: background-size .35s var(--wy-ease);
+}
+
+.wy-post-card:hover .wp-block-post-title a {
+	background-size: 100% 1.5px;
+}
+
+.wy-post-card .wp-block-post-excerpt {
+	margin: 0;
+	flex: 1;
+}
+
+.wy-post-card .wp-block-post-excerpt__more-text {
+	display: none;
+}
+
+/* ---------- page headers ---------- */
+
+.wy-pagehead {
+	padding-block: clamp(3.5rem, 8vw, 6.5rem) clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.wy-pagehead__title,
+.wy-pagehead .wp-block-query-title {
+	font-size: var(--wp--preset--font-size--xx-large);
+	font-weight: 430;
+	line-height: 1;
+	letter-spacing: -0.03em;
+	margin: 0;
+	max-width: 18ch;
+	font-variation-settings: "SOFT" 70, "opsz" 144;
+}
+
+.wy-pagehead .wy-lead,
+.wy-pagehead .wp-block-post-excerpt {
+	margin-top: 1.5rem;
+}
+
+.wy-pagehead .wp-block-post-excerpt__excerpt {
+	font-size: var(--wp--preset--font-size--large);
+	line-height: 1.5;
+	max-width: 40rem;
+	margin: 0;
+}
+
+.wy-pagehead .wp-block-post-excerpt__more-text {
+	display: none;
+}
+
+.wy-article-meta {
+	gap: .5rem 1.25rem;
+	margin-bottom: 1.5rem;
+}
+
+.wy-article-meta .wp-block-post-terms a {
+	color: var(--wy-clay);
+	text-decoration: none;
+}
+
+.wy-search {
+	margin-top: 2rem;
+	max-width: 32rem;
+}
+
+/* The tier key on the systems menu. */
+.wy-legend {
 	list-style: none;
+	margin: 0;
+	padding: 1.25rem 1.4rem;
+	border-radius: var(--wy-radius);
+	background: color-mix(in srgb, var(--wy-paper) 7%, transparent);
+	border: 1px solid color-mix(in srgb, var(--wy-paper) 14%, transparent);
+	display: grid;
+	gap: .85rem;
+}
+
+.wy-legend li {
+	display: grid;
+	grid-template-columns: 11.5rem minmax(0, 1fr);
+	align-items: center;
+	gap: 1rem;
+	font-size: .9rem;
+	color: color-mix(in srgb, var(--wy-paper) 76%, transparent);
+}
+
+@media (max-width: 640px) {
+	.wy-legend li {
+		grid-template-columns: minmax(0, 1fr);
+		gap: .35rem;
+	}
+}
+
+/* ---------- reading ---------- */
+
+.wy-prose {
+	font-size: 1.0938rem;
+	line-height: 1.75;
+}
+
+.wy-prose > * + * {
+	margin-top: 1.35em;
+}
+
+.wy-prose h2 {
+	font-size: clamp(1.7rem, 3vw, 2.25rem);
+	font-weight: 480;
+	margin-top: 3.25rem;
+	margin-bottom: .2rem;
+}
+
+.wy-prose h3 {
+	font-size: 1.35rem;
+	font-weight: 550;
+	margin-top: 2.25rem;
+}
+
+.wy-prose strong {
+	color: var(--wy-ink);
+	font-weight: 650;
+}
+
+.wy-prose ul,
+.wy-prose ol {
+	padding-left: 0;
+	list-style: none;
+}
+
+.wy-prose li {
+	position: relative;
+	padding-left: 1.9rem;
+	margin-block: .6rem;
+}
+
+.wy-prose ul > li::before {
+	content: "";
+	position: absolute;
+	left: .35rem;
+	top: .7em;
+	width: .5rem;
+	height: .5rem;
+	border-radius: 50%;
+	background: var(--wy-straw);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--wy-straw) 28%, transparent);
+}
+
+.wy-prose ol {
+	counter-reset: wy-ol;
+}
+
+.wy-prose ol > li {
+	counter-increment: wy-ol;
+}
+
+.wy-prose ol > li::before {
+	content: counter(wy-ol, decimal-leading-zero);
+	position: absolute;
+	left: 0;
+	top: .25em;
+	font-family: var(--wy-mono);
+	font-size: .78rem;
+	font-weight: 500;
+	color: var(--wy-clay);
+}
+
+/* An article opens with a drop cap. */
+.single-post .wy-prose > p:first-child::first-letter {
+	float: left;
+	font-family: var(--wy-display);
+	font-size: 4.6em;
+	line-height: .82;
+	font-weight: 450;
+	color: var(--wy-clay);
+	margin: .06em .1em 0 -.03em;
+	font-variation-settings: "SOFT" 100, "opsz" 144;
+}
+
+/* Principles: numbered, one idea per section. */
+.wy-page-principles .wy-prose {
+	counter-reset: wy-principle;
+}
+
+.wy-page-principles .wy-prose h2 {
+	counter-increment: wy-principle;
+	border-top: 1.5px solid var(--wy-ink);
+	padding-top: 1.4rem;
+}
+
+.wy-page-principles .wy-prose h2::before {
+	content: counter(wy-principle, decimal-leading-zero);
+	display: block;
+	font-family: var(--wy-mono);
+	font-size: .78rem;
+	letter-spacing: .14em;
+	color: var(--wy-clay);
+	margin-bottom: .9rem;
+}
+
+.wy-postnav {
+	margin-top: 4rem;
+	padding-top: 1.75rem;
+	border-top: 1.5px solid var(--wy-ink);
+	gap: 2rem;
+}
+
+.wy-postnav .wp-block-post-navigation-link {
+	font-family: var(--wy-mono);
+	font-size: .75rem;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	max-width: 48%;
+}
+
+.wy-postnav .wp-block-post-navigation-link a {
+	display: block;
+	margin-top: .35rem;
+	font-family: var(--wy-display);
+	font-size: 1.25rem;
+	letter-spacing: 0;
+	text-transform: none;
+	color: var(--wy-ink);
+	text-decoration: none;
+}
+
+/* ---------- a system's page ---------- */
+
+.wy-syshead {
+	padding-block: clamp(2.5rem, 6vw, 5rem);
+}
+
+.wy-crumbs {
+	gap: .5rem;
+	margin-bottom: 1.25rem;
+	font-family: var(--wy-mono);
+	font-size: .75rem;
+	letter-spacing: .14em;
+	text-transform: uppercase;
+}
+
+.wy-crumbs p,
+.wy-crumbs .wp-block-post-terms {
+	margin: 0;
+	font-size: inherit;
+}
+
+.wy-crumbs a {
+	color: var(--wy-clay);
+	text-decoration: none;
+}
+
+.wy-crumbs p::after {
+	content: "/";
+	margin-left: .5rem;
+	color: var(--wy-muted);
+}
+
+.wy-sysbody {
+	gap: clamp(2rem, 6vw, 5.5rem);
+}
+
+.wy-sysbody .wy-prose > h2:first-child {
+	margin-top: 0;
+}
+
+@media (min-width: 782px) {
+	.wy-sysbody__aside .ys-facts {
+		position: sticky;
+		top: calc(var(--wy-header-h) + 24px);
+	}
+}
+
+/* ---------- closing band ---------- */
+
+.wy-cta {
+	padding-block: clamp(3.5rem, 8vw, 6rem);
+}
+
+.wy-cta .wy-h-big {
+	max-width: 16ch;
+}
+
+.wy-cta__action .wp-block-buttons {
+	justify-content: flex-end;
+}
+
+@media (max-width: 781px) {
+	.wy-cta__action .wp-block-buttons {
+		justify-content: flex-start;
+	}
+}
+
+/* ---------- footer ---------- */
+
+.wy-footer {
+	background: var(--wy-forest);
+	color: color-mix(in srgb, var(--wy-paper) 78%, transparent);
+	padding-block: clamp(3.5rem, 7vw, 5.5rem) 2rem;
+	font-size: .95rem;
+}
+
+.wy-footer__grid {
+	gap: clamp(2rem, 4vw, 4rem);
+}
+
+.wy-footer__brand {
+	align-items: center;
+	gap: .75rem;
+	color: var(--wy-paper);
+	text-decoration: none;
+	font-family: var(--wy-display);
+	font-size: 1.35rem;
+	font-weight: 600;
+	line-height: 1.2;
+}
+
+.wy-footer__statement {
+	font-family: var(--wy-display);
+	font-size: clamp(1.5rem, 2.4vw, 2rem);
+	font-weight: 400;
+	font-style: italic;
+	line-height: 1.2;
+	color: var(--wy-paper);
+	max-width: 18ch;
+	margin-top: 1.5rem;
+	font-variation-settings: "SOFT" 100, "opsz" 144;
+}
+
+.wy-footer .wy-eyebrow {
+	color: var(--wy-straw);
+}
+
+.wy-footer a:not(.wp-element-button) {
+	color: var(--wy-paper);
+	text-decoration: none;
+}
+
+.wy-footer a:not(.wp-element-button):hover {
+	color: var(--wy-straw);
+}
+
+.wy-footer .wy-plain-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	line-height: 2.1;
+}
+
+.wy-towns {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	columns: 2;
+	column-gap: 1.25rem;
+	line-height: 1.9;
+}
+
+.wy-towns li {
+	break-inside: avoid;
+}
+
+.wy-footer__base {
+	margin-top: clamp(3rem, 6vw, 4.5rem);
+	padding-top: 1.5rem;
+	border-top: 1px solid color-mix(in srgb, var(--wy-paper) 14%, transparent);
+	font-family: var(--wy-mono);
+	font-size: .72rem;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	gap: .5rem 2rem;
+}
+
+.wy-footer__base p {
+	margin: 0;
+}
+
+/* ---------- motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+
+	*,
+	*::before,
+	*::after {
+		animation: none !important;
+		transition: none !important;
+	}
 }

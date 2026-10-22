@@ -7,7 +7,7 @@
 	const ServerSideRender = wp.serverSideRender;
 	const { useBlockProps } = wp.blockEditor;
 
-	[ 'yard-systems/system-menu', 'yard-systems/system-facts', 'yard-systems/inquiry-form' ].forEach( function ( name ) {
+	[ 'yard-systems/system-menu', 'yard-systems/system-facts', 'yard-systems/system-art', 'yard-systems/inquiry-form' ].forEach( function ( name ) {
 		wp.blocks.registerBlockType( name, {
 			edit: function ( props ) {
 				return el(

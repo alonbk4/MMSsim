@@ -1,19 +1,38 @@
 <!-- wp:template-part {"slug":"header","tagName":"header"} /-->
 
-<!-- wp:group {"tagName":"main","style":{"spacing":{"padding":{"top":"var:preset|spacing|50","bottom":"var:preset|spacing|50"}}},"layout":{"type":"constrained"}} -->
-<main class="wp-block-group" style="padding-top:var(--wp--preset--spacing--50);padding-bottom:var(--wp--preset--spacing--50)"><!-- wp:heading {"level":1} -->
-<h1 class="wp-block-heading">The systems</h1>
+<!-- wp:group {"tagName":"main","className":"wy-main","layout":{"type":"constrained"}} -->
+<main class="wp-block-group wy-main"><!-- wp:group {"align":"full","className":"wy-pagehead wy-band wy-band--forest wy-has-contours","layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull wy-pagehead wy-band wy-band--forest wy-has-contours"><!-- wp:columns {"verticalAlignment":"bottom","align":"wide"} -->
+<div class="wp-block-columns alignwide are-vertically-aligned-bottom"><!-- wp:column {"verticalAlignment":"bottom","width":"56%"} -->
+<div class="wp-block-column is-vertically-aligned-bottom" style="flex-basis:56%"><!-- wp:paragraph {"className":"wy-eyebrow"} -->
+<p class="wy-eyebrow">The menu</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":1,"className":"wy-pagehead__title"} -->
+<h1 class="wp-block-heading wy-pagehead__title">The systems</h1>
 <!-- /wp:heading -->
 
-<!-- wp:paragraph {"fontSize":"large"} -->
-<p class="has-large-font-size">Everything I build, run or have tried in my own yard, as a menu. Pick what you like, add it to your list, and ask about it.</p>
-<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"wy-lead"} -->
+<p class="wy-lead">Everything I build, run or have tried in my own yard. Pick what you like, add it to your list, and ask about it — or come and see it running first.</p>
+<!-- /wp:paragraph --></div>
+<!-- /wp:column -->
 
-<!-- wp:paragraph {"textColor":"muted"} -->
-<p class="has-muted-color has-text-color">Each one is labeled with what happened when I tried it: <strong>works here</strong>, <strong>partly worked here</strong>, <strong>didn’t work here</strong>, or <strong>researched</strong> — documented elsewhere but not yet tried in this yard. The failures stay on the list so nobody pays for them twice.</p>
-<!-- /wp:paragraph -->
+<!-- wp:column {"verticalAlignment":"bottom","width":"44%"} -->
+<div class="wp-block-column is-vertically-aligned-bottom" style="flex-basis:44%"><!-- wp:html -->
+<ul class="wy-legend">
+	<li><span class="ys-tier ys-tier--works"><span class="ys-tier__dot" aria-hidden="true"></span>Works here</span><span>Built in this yard and doing what it should.</span></li>
+	<li><span class="ys-tier ys-tier--partial"><span class="ys-tier__dot" aria-hidden="true"></span>Partly worked here</span><span>Worked some of the time; the difference is written up.</span></li>
+	<li><span class="ys-tier ys-tier--failed"><span class="ys-tier__dot" aria-hidden="true"></span>Didn’t work here</span><span>Built here and failed. Kept as a record, never sold.</span></li>
+	<li><span class="ys-tier ys-tier--researched"><span class="ys-tier__dot" aria-hidden="true"></span>Researched</span><span>Well documented elsewhere, not yet built here.</span></li>
+</ul>
+<!-- /wp:html --></div>
+<!-- /wp:column --></div>
+<!-- /wp:columns --></div>
+<!-- /wp:group -->
 
-<!-- wp:yard-systems/system-menu {"align":"wide"} /--></main>
+<!-- wp:group {"align":"full","className":"wy-section","layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull wy-section"><!-- wp:yard-systems/system-menu {"align":"wide"} /--></div>
+<!-- /wp:group --></main>
 <!-- /wp:group -->
 
 <!-- wp:pattern {"slug":"working-yard/cta"} /-->

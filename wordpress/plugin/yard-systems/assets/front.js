@@ -42,9 +42,11 @@
 		if ( bar ) {
 			const onForm = !! document.querySelector( '.ys-form' );
 			bar.hidden = ! list.length || onForm;
+			const n = bar.querySelector( '.ys-listbar__n' );
 			const count = bar.querySelector( '.ys-listbar__count' );
-			if ( count ) {
-				count.textContent = list.length === 1 ? '1 system on your list' : list.length + ' systems on your list';
+			if ( n && count ) {
+				n.textContent = String( list.length );
+				count.textContent = list.length === 1 ? 'system on your list' : 'systems on your list';
 			}
 		}
 	}
