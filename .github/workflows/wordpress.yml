@@ -78,14 +78,24 @@ jobs:
 
           # A secret pasted from a dashboard often carries a trailing line
           # break or space, which the server reads as part of the value.
-          HOST=$(printf '%s' "$HOST" | tr -d '[:space:]')
-          USER_NAME=$(printf '%s' "$USER_NAME" | tr -d '[:space:]')
+          #
+          # The Hub also offers a whole "ssh user@host" line to copy, and it is
+          # easy to paste that into either secret. Take the part each needs.
+          tidy() { printf '%s' "$1" | sed -E 's/^[[:space:]]*ssh[[:space:]]+//' | tr -d '[:space:]'; }
+          HOST=$(tidy "$HOST"); HOST=${HOST##*@}
+          USER_NAME=$(tidy "$USER_NAME"); USER_NAME=${USER_NAME%%@*}
+
+          # Secret values are masked in this log, so describe their shape
+          # instead: enough to spot a wrong paste without printing either.
+          echo "Username: ${#USER_NAME} characters. Host: ${#HOST} characters, $(tr -cd . <<<"$HOST" | wc -c) dots."
 
           if [ -n "$SSH_KEY" ]; then
             # OpenSSH refuses a key file without its final line break.
             key="$RUNNER_TEMP/deploy_key"
             printf '%s\n' "$SSH_KEY" | tr -d '\r' > "$key"
             chmod 600 "$key"
+            # The fingerprint is public; compare it with the key in the Hub.
+            echo "Key fingerprint: $(ssh-keygen -y -f "$key" | ssh-keygen -lf - | awk '{print $2}')"
             login=(ssh -i "$key" -o IdentitiesOnly=yes -o BatchMode=yes)
             how="key"
           else
