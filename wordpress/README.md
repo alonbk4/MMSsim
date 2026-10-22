@@ -66,6 +66,12 @@ down the starter content; every later deploy only replaces files, so nothing
 changed in the dashboard is switched back. To add starter content that has
 been added to the code since, run the workflow by hand with *starter* ticked.
 
+Every deploy ends by clearing the host's static page cache
+(`wp hosting clearcache static` on WPMU DEV). Without it, visitors keep
+getting the cached old pages, while any URL with a query string, which
+skips the cache, shows the new ones. Running the workflow by hand with
+*diagnose* ticked prints how caching is set up on the server.
+
 No SSH? Run `wordpress/bin/build-zips.sh`, upload `yard-systems.zip` under
 Plugins → Add New → Upload and `working-yard.zip` under Appearance → Themes →
 Upload, activate both, then *Settings → Yard site → Install starter content*.

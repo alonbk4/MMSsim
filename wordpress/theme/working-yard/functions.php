@@ -22,6 +22,14 @@ add_action( 'wp_head', function () {
 	}
 }, 1 );
 
+// The brand mark in the browser tab, until a site icon is set in the
+// dashboard (Settings → General → Site Icon), which then takes over.
+add_action( 'wp_head', function () {
+	if ( ! has_site_icon() ) {
+		printf( '<link rel="icon" href="%s" type="image/svg+xml" />' . "\n", esc_url( get_theme_file_uri( 'assets/favicon.svg' ) ) );
+	}
+}, 2 );
+
 add_action( 'init', function () {
 	register_block_pattern_category( 'working-yard', array( 'label' => __( 'Working Yard', 'working-yard' ) ) );
 	// Page headers show the page's summary under its title.
