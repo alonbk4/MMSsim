@@ -8,7 +8,9 @@
 # Secrets (Settings → Secrets and variables → Actions):
 #   STAGING_SSH_HOST       required; without it the deploy is skipped
 #   STAGING_SSH_USER       required
-#   STAGING_SSH_PASSWORD   required
+#   STAGING_SSH_KEY        the private half of a key whose public half is
+#                          added to the SSH user in the WPMU DEV Hub; or
+#   STAGING_SSH_PASSWORD   that user's password. The key wins if both are set.
 #   STAGING_SSH_PORT       optional, default 22
 #   STAGING_WP_PATH        optional; found by looking for wp-config.php if unset
 name: WordPress site
@@ -59,6 +61,7 @@ jobs:
     env:
       HOST: ${{ secrets.STAGING_SSH_HOST }}
       USER_NAME: ${{ secrets.STAGING_SSH_USER }}
+      SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
       SSHPASS: ${{ secrets.STAGING_SSH_PASSWORD }}
       PORT: ${{ secrets.STAGING_SSH_PORT }}
       WP_PATH: ${{ secrets.STAGING_WP_PATH }}
@@ -68,29 +71,42 @@ jobs:
 
       - name: Deploy
         run: |
-          if [ -z "$HOST" ] || [ -z "$USER_NAME" ] || [ -z "$SSHPASS" ]; then
+          if [ -z "$HOST" ] || [ -z "$USER_NAME" ] || { [ -z "$SSH_KEY" ] && [ -z "$SSHPASS" ]; }; then
             echo "::warning::Staging SSH secrets are not set, so nothing was deployed."
             exit 0
           fi
-          sudo apt-get install -y -qq sshpass > /dev/null
 
           # A secret pasted from a dashboard often carries a trailing line
-          # break or space, which the server reads as part of the password.
+          # break or space, which the server reads as part of the value.
           HOST=$(printf '%s' "$HOST" | tr -d '[:space:]')
           USER_NAME=$(printf '%s' "$USER_NAME" | tr -d '[:space:]')
-          SSHPASS=$(printf '%s' "$SSHPASS" | tr -d '\r\n')
-          export SSHPASS
+
+          if [ -n "$SSH_KEY" ]; then
+            # OpenSSH refuses a key file without its final line break.
+            key="$RUNNER_TEMP/deploy_key"
+            printf '%s\n' "$SSH_KEY" | tr -d '\r' > "$key"
+            chmod 600 "$key"
+            login=(ssh -i "$key" -o IdentitiesOnly=yes -o BatchMode=yes)
+            how="key"
+          else
+            sudo apt-get install -y -qq sshpass > /dev/null
+            SSHPASS=$(printf '%s' "$SSHPASS" | tr -d '\r\n')
+            export SSHPASS
+            login=(sshpass -e ssh)
+            how="password"
+          fi
+          echo "Logging in to the staging server with a $how."
 
           # A fresh runner has never seen the host, so its key is accepted on
           # first contact. Fine for a test site; pin it before production.
           remote() {
-            sshpass -e ssh -p "${PORT:-22}" -o StrictHostKeyChecking=accept-new \
+            "${login[@]}" -p "${PORT:-22}" -o StrictHostKeyChecking=accept-new \
               -o UserKnownHostsFile="$RUNNER_TEMP/known_hosts" "$USER_NAME@$HOST" "$@" || {
               rc=$?
               case $rc in
                 5) echo "::error::The server rejected the password for $USER_NAME. Check STAGING_SSH_PASSWORD against the SSH user in the WPMU DEV Hub, or reset it there." ;;
                 6) echo "::error::The server's host key was refused." ;;
-                255) echo "::error::Could not connect to $HOST on port ${PORT:-22}, or the command on the server failed. Check STAGING_SSH_HOST and STAGING_SSH_PORT." ;;
+                255) echo "::error::Could not log in to $HOST on port ${PORT:-22} as $USER_NAME with a $how. With a key, check its public half is added to that user in the WPMU DEV Hub." ;;
               esac
               return $rc
             }

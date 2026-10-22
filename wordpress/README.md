@@ -55,7 +55,8 @@ Secrets and variables → Actions):
 |---|---|
 | `STAGING_SSH_HOST` | e.g. `makemicld.tempurl.host` |
 | `STAGING_SSH_USER` | the SFTP/SSH user from the WPMU DEV Hub |
-| `STAGING_SSH_PASSWORD` | its password |
+| `STAGING_SSH_KEY` | the private half of a deploy key whose public half is added to that user in the Hub (preferred) |
+| `STAGING_SSH_PASSWORD` | or that user's password; the key wins if both are set |
 | `STAGING_SSH_PORT` | optional, default 22 |
 | `STAGING_WP_PATH` | optional; found automatically by looking for `wp-config.php` |
 
