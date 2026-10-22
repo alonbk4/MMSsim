@@ -185,5 +185,6 @@ jobs:
               echo '--- cached copies of the home page'; find wp-content -maxdepth 6 -name 'index*.htm*' -path '*cache*' 2>/dev/null | head -10
               echo '--- hummingbird page cache settings'; wp option get wphb_settings --format=json 2>/dev/null | tr ',' '\n' | grep -iE 'page_cache|cache_|enabled|hosting|server' | head -30
               echo '--- hummingbird commands'; wp help hummingbird 2>&1 | head -30
-              echo '--- hosting commands'; wp help hosting 2>&1 | head -15" || true
+              echo '--- hosting commands'; wp help hosting 2>&1 | sed -n '8,60p'
+              echo '--- hosting cache'; wp help hosting cache 2>&1 | head -40" || true
           fi
