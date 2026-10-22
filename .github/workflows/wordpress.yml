@@ -74,11 +74,26 @@ jobs:
           fi
           sudo apt-get install -y -qq sshpass > /dev/null
 
+          # A secret pasted from a dashboard often carries a trailing line
+          # break or space, which the server reads as part of the password.
+          HOST=$(printf '%s' "$HOST" | tr -d '[:space:]')
+          USER_NAME=$(printf '%s' "$USER_NAME" | tr -d '[:space:]')
+          SSHPASS=$(printf '%s' "$SSHPASS" | tr -d '\r\n')
+          export SSHPASS
+
           # A fresh runner has never seen the host, so its key is accepted on
           # first contact. Fine for a test site; pin it before production.
           remote() {
             sshpass -e ssh -p "${PORT:-22}" -o StrictHostKeyChecking=accept-new \
-              -o UserKnownHostsFile="$RUNNER_TEMP/known_hosts" "$USER_NAME@$HOST" "$@"
+              -o UserKnownHostsFile="$RUNNER_TEMP/known_hosts" "$USER_NAME@$HOST" "$@" || {
+              rc=$?
+              case $rc in
+                5) echo "::error::The server rejected the password for $USER_NAME. Check STAGING_SSH_PASSWORD against the SSH user in the WPMU DEV Hub, or reset it there." ;;
+                6) echo "::error::The server's host key was refused." ;;
+                255) echo "::error::Could not connect to $HOST on port ${PORT:-22}, or the command on the server failed. Check STAGING_SSH_HOST and STAGING_SSH_PORT." ;;
+              esac
+              return $rc
+            }
           }
 
           if [ -z "$WP_PATH" ]; then
