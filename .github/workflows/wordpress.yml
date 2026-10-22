@@ -175,7 +175,8 @@ jobs:
             # deploy until it is cleared. WPMU DEV provides its own command for
             # that; elsewhere, Hummingbird's page cache clears on this action.
             if wp cli has-command 'hosting clearcache'; then
-              wp hosting clearcache
+              wp hosting clearcache static
+              wp hosting clearcache object || true
             else
               wp eval 'do_action( \"wphb_clear_page_cache\" );' || true
             fi
