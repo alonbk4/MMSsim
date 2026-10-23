@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CLIMATE_PRESETS } from './climate';
 import { createDefaultDesign, DESIGN_VERSION, normalizeDesign, YARD_RESULTS } from './defaults';
+import { applyLog, resultsFromLog, SEED_LOG } from './yardLog';
 import { simulate } from './simulate';
 import { CATALOG_BY_ID } from './catalog';
 import { evidenceMeta, isEvidenceTier } from './resources';
@@ -149,15 +150,28 @@ describe("the yard's own results", () => {
     for (const id of Object.keys(YARD_RESULTS)) expect(CATALOG_BY_ID[id]).toBeDefined();
   });
 
-  it('reach a design saved before they existed', () => {
-    const d = normalizeDesign({ ...legacy(), version: 3 });
-    expect(d.overrides.aerobin.evidence).toBe('testedSuccess');
-    expect(d.overrides['biochar-kiln'].evidence).toBe('testedSuccess');
-    // Without disturbing what was already there.
-    expect(d.overrides['annual-beds'].yieldFactor).toBe(1.3);
+  it('are read from the yard log, so the two cannot disagree', () => {
+    const fromLog = resultsFromLog(SEED_LOG);
+    expect(Object.keys(YARD_RESULTS).sort()).toEqual(
+      Object.keys(fromLog).filter((id) => fromLog[id]).sort());
+    for (const [id, ov] of Object.entries(YARD_RESULTS)) expect(ov.evidence).toBe(fromLog[id]);
   });
 
-  it('never overrule a tier the user set', () => {
+  it('reach a design saved before they existed, through the log', () => {
+    // Opening a design no longer adds results; the log sets them at runtime.
+    const d = normalizeDesign({ ...legacy(), version: 3 });
+    expect(d.overrides.aerobin).toBeUndefined();
+    const overrides = applyLog(d.overrides, SEED_LOG);
+    expect(overrides.aerobin.evidence).toBe('testedSuccess');
+    expect(overrides['biochar-kiln'].evidence).toBe('testedSuccess');
+    // Without disturbing what was already there.
+    expect(overrides['annual-beds'].yieldFactor).toBe(1.3);
+  });
+
+  it('never overrule a tier the user set when a design is opened', () => {
+    // Where the user and the log disagree, the app carries the user's tier
+    // into the log as a dated entry (see state/yardLog.test.ts); opening the
+    // design must hand it over intact for that to happen.
     const d = normalizeDesign({
       ...legacy(),
       version: 3,
@@ -165,21 +179,6 @@ describe("the yard's own results", () => {
     });
     expect(d.overrides.aerobin.evidence).toBe('testedPartial');
     expect(d.overrides.aerobin.yieldFactor).toBe(0.8);
-  });
-
-  it('reach a design that already had the earlier ones', () => {
-    // Opened the app at version 4, so it has the Aerobin but not what came
-    // after; it gets the later entries without the earlier ones reapplied.
-    const d = normalizeDesign({
-      ...legacy(),
-      version: 4,
-      overrides: { aerobin: { evidence: 'testedPartial' } },
-    });
-    expect(d.overrides.aquaponics.evidence).toBe('testedSuccess');
-    expect(d.overrides['nettle-patch'].evidence).toBe('testedPartial');
-    expect(d.overrides['banana-peel-tea'].evidence).toBe('testedPartial');
-    expect(d.overrides.aerobin.evidence).toBe('testedPartial');
-    expect(d.overrides['biochar-kiln']).toBeUndefined();
   });
 
   it('are applied once, so clearing one later sticks', () => {
