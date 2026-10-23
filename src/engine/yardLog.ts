@@ -54,6 +54,9 @@ export interface LogEntry {
  * with the results it already had, dated as closely as they were reported.
  *
  * `updated` is 1 so that any edit or deletion, on any device, wins over these.
+ * A device keeps the copy it already has on a tie, so correcting a seed means
+ * raising its `updated` (2, then 3…), or devices that have it never see the
+ * correction.
  */
 export const SEED_LOG: LogEntry[] = [
   seed('aerobin', '2026-08', 'testedSuccess',
@@ -161,18 +164,23 @@ export function applyLog(
  * day they were carried over (the real date was never kept) and kept
  * private, as they have no note to show. The id is the same on every device,
  * so two devices that both had a system marked the same way add one entry.
+ *
+ * `unmentioned` limits it to systems the log has never mentioned, for a
+ * design loaded later (an older export): where the log has a say, it wins.
  */
 export function entriesFromOverrides(
   overrides: Record<string, SystemOverride>,
   log: LogEntry[],
   now: number,
   today: string,
+  unmentioned = false,
 ): LogEntry[] {
   const results = resultsFromLog(log);
   const out: LogEntry[] = [];
   for (const [system, ov] of Object.entries(overrides)) {
     const tier = ov?.evidence;
     if (!isLogResult(tier) || results[system] === tier) continue;
+    if (unmentioned && system in results) continue;
     out.push({
       id: `pre-log-${system}-${tier}`, system, date: today, result: tier,
       note: '', private: true, photo: null, created: now, updated: now,

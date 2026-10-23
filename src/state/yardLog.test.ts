@@ -52,6 +52,24 @@ describe('the yard log on a device', () => {
     stop();
   });
 
+  it('carries in a tested tier from a design loaded later, but only where the log has no say', () => {
+    const stop = startYardLog();
+    const loaded = createDefaultDesign();
+    loaded.overrides['grow-trellis'] = { evidence: 'testedSuccess' }; // never in the log
+    loaded.overrides.aerobin = { evidence: 'testedFailed' }; // the log says works
+    useApp.getState().loadDesign(loaded);
+
+    const carried = useYardLog.getState().entries.filter((e) => e.id.startsWith('pre-log-'));
+    expect(carried.map((e) => [e.system, e.result, e.private])).toEqual([['grow-trellis', 'testedSuccess', true]]);
+    expect(tier('grow-trellis')).toBe('testedSuccess');
+    expect(tier('aerobin')).toBe('testedSuccess');
+
+    // Loading it again adds nothing.
+    useApp.getState().loadDesign(loaded);
+    expect(useYardLog.getState().entries.filter((e) => e.id.startsWith('pre-log-'))).toHaveLength(1);
+    stop();
+  });
+
   it('takes in another device’s entries', () => {
     const stop = startYardLog();
     useYardLog.getState().mergeFromSite([{

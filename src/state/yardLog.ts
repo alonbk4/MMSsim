@@ -141,8 +141,9 @@ export const useYardLog = create<YardLogState>()(
 /**
  * Keep the design's tiers in step with the log, from now on. Before that,
  * once per device, carry any result the design holds that the log does not
- * into the log, so nothing marked before the log existed is lost. Returns a
- * function that stops it.
+ * into the log, so nothing marked before the log existed is lost; and do the
+ * same, for systems the log has never mentioned, whenever a design is loaded
+ * later. Returns a function that stops it.
  */
 export function startYardLog(): () => void {
   const log = useYardLog.getState();
@@ -161,9 +162,15 @@ export function startYardLog(): () => void {
   const stopLog = useYardLog.subscribe((s, prev) => {
     if (s.entries !== prev.entries) apply();
   });
-  // A design loaded from a file, or reset, gets the log's tiers back.
+  // A design loaded from a file, or reset, gets the log's tiers back; a
+  // tested tier the log has never heard of joins it, so the simulator and
+  // the website, which takes tested tiers from the log only, agree.
   const stopDesign = useApp.subscribe((s, prev) => {
-    if (s.design.overrides !== prev.design.overrides) apply();
+    if (s.design.overrides === prev.design.overrides) return;
+    const { entries } = useYardLog.getState();
+    const carried = entriesFromOverrides(s.design.overrides, entries, Date.now(), localDate(), true);
+    if (carried.length) useYardLog.setState({ entries: mergeLogs(entries, carried) });
+    apply();
   });
   return () => {
     stopLog();
