@@ -3,6 +3,7 @@ import { DESIGN_VERSION } from './engine/defaults';
 import type { Design } from './engine/types';
 import { useApp, type Tab } from './state/store';
 import { startWebsiteSync } from './state/website';
+import { startYardLog } from './state/yardLog';
 import { CatalogPane } from './ui/CatalogPane';
 import { Icon } from './ui/common';
 import { DesignPane } from './ui/DesignPane';
@@ -24,8 +25,17 @@ export default function App() {
   const siteName = useApp((s) => s.design.site.name);
   const [menu, setMenu] = useState(false);
 
-  // Results recorded here go to the yard's website, if one is connected.
-  useEffect(() => startWebsiteSync(), []);
+  // The yard log sets the tested tiers, and goes to the yard's website if
+  // one is connected. The log starts first: it may carry results into the
+  // log that the first sync should send.
+  useEffect(() => {
+    const stopLog = startYardLog();
+    const stopSync = startWebsiteSync();
+    return () => {
+      stopSync();
+      stopLog();
+    };
+  }, []);
 
   return (
     <div className="app">

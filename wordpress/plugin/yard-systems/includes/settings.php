@@ -85,7 +85,7 @@ function yard_systems_settings_page() {
 				<th scope="row"><?php esc_html_e( 'Sync key', 'yard-systems' ); ?></th>
 				<td>
 					<input type="text" readonly class="regular-text code" value="<?php echo esc_attr( yard_systems_sync_key() ); ?>" onfocus="this.select()" />
-					<p class="description"><?php esc_html_e( 'Paste both into the simulator: Site tab → Website. The key can change the statuses shown here and nothing else.', 'yard-systems' ); ?></p>
+					<p class="description"><?php esc_html_e( 'Paste both into the simulator: Site tab → Website. The key can set the statuses shown here, add to the yard log and send its photos, and nothing else.', 'yard-systems' ); ?></p>
 				</td>
 			</tr>
 		</table>
@@ -94,6 +94,26 @@ function yard_systems_settings_page() {
 			<?php wp_nonce_field( 'yard_systems_new_key' ); ?>
 			<?php submit_button( __( 'Make a new key', 'yard-systems' ), 'secondary', 'submit', false ); ?>
 		</form>
+
+		<?php
+		$log     = array_filter( yard_systems_log(), function ( $entry ) {
+			return empty( $entry['deleted'] );
+		} );
+		$private = count( array_filter( $log, function ( $entry ) {
+			return ! empty( $entry['private'] );
+		} ) );
+		?>
+		<p>
+			<?php
+			echo esc_html(
+				$log
+					/* translators: 1: entries in the yard log, 2: how many of them are private */
+					? sprintf( _n( 'The yard log has %1$d entry, %2$d of them private.', 'The yard log has %1$d entries, %2$d of them private.', count( $log ), 'yard-systems' ), count( $log ), $private )
+					: __( 'The yard log is empty: nothing has been sent from the simulator yet.', 'yard-systems' )
+			);
+			?>
+			<?php esc_html_e( 'It is written in the simulator; public entries show on each system’s page.', 'yard-systems' ); ?>
+		</p>
 
 		<h3><?php esc_html_e( 'Which simulator system each one follows', 'yard-systems' ); ?></h3>
 		<table class="widefat striped" style="max-width:52rem">

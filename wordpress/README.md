@@ -40,13 +40,32 @@ description and link-preview tags, so a page shared on Facebook, Nextdoor or
 in a text shows a title, a line and a picture. These step aside when an SEO
 plugin is active, so nothing is printed twice.
 
-**Statuses from the simulator.** The simulator is where results get
-recorded, and it pushes them here: Site tab → Website, with the address and
-the key from *Settings → Yard site*. Each website system follows one
-simulator system (*Simulator system* in its sidebar box); a push sets its
-badge, and publishes it if the simulator says it has been tested in the
-yard. Nothing is ever unpublished by a push. The key can change statuses and
-nothing else; *Make a new key* retires the old one.
+**The yard log.** What was tried in the yard, when, and how it went: each
+entry a date, a result (worked, partly worked, didn't work, or just a note),
+a note and a photo. It is written in the simulator (Catalog → a system →
+Yard log), on whichever device is at hand, and kept here, so every device
+reads and adds to the same record. Connect each device under Site tab →
+Website, with the address and the key from *Settings → Yard site*.
+
+- Each website system follows a simulator system (*Simulator system* in its
+  sidebar box; several, separated by spaces, where one website system is
+  more than one in the simulator, as biochar is). Its badge is the latest
+  result in the log, and a system with a result is published. Nothing is
+  ever unpublished by the log.
+- Public entries show on the system's page under *From the yard log*, newest
+  first, and the newest photo stands in as the system's picture until it has
+  a featured image.
+- A private entry sets the badge like any other and is never shown. Its
+  photo is a private attachment, in no public listing; the file itself has a
+  random name.
+- Photos are resized and re-encoded in the simulator before they are sent,
+  which leaves their location and other camera data behind.
+- Devices can record offline. Each entry carries the time it last changed and
+  the newer copy wins, entry by entry; deleted entries stay as markers so no
+  device brings them back.
+
+The key can set badges, add to the log and send its photos, and nothing
+else; *Make a new key* retires the old one.
 
 **Journal.** Six first articles, written from the yard's own record, install
 as drafts: they are in your voice, so nothing is published under your name

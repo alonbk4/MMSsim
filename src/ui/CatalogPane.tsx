@@ -4,11 +4,14 @@ import { buildDrivers } from '../engine/climate';
 import { EVIDENCE, EVIDENCE_ORDER, evidenceMeta, RESOURCES } from '../engine/resources';
 import { annualPerUnit, buildSeasonProfiles } from '../engine/simulate';
 import type { SystemCategory, SystemDef } from '../engine/types';
+import { isLogResult, resultsFromLog } from '../engine/yardLog';
 import { systemById, useApp } from '../state/store';
+import { useYardLog } from '../state/yardLog';
 import {
   CATEGORY_ICON, CATEGORY_LABEL, compact, EvidenceBadge, Field, Icon, lower, money,
 } from './common';
 import { trimNum } from './YardCanvas';
+import { YardLogCard } from './YardLogCard';
 
 const CATEGORIES: SystemCategory[] = ['water', 'food', 'energy', 'sanitation', 'soil', 'shelter'];
 
@@ -106,6 +109,8 @@ function SystemDetail({ def, onBack }: { def: SystemDef; onBack: () => void }) {
   const seasons = buildSeasonProfiles(design.site, drivers);
 
   const [editing, setEditing] = useState(false);
+  // A tested tier comes from the yard log, never from a chip.
+  const logged = useYardLog((s) => resultsFromLog(s.entries)[def.id] ?? null);
 
   return (
     <div className="pane">
@@ -144,6 +149,8 @@ function SystemDetail({ def, onBack }: { def: SystemDef; onBack: () => void }) {
             </button>
           </div>
         </div>
+
+        <YardLogCard system={def.id} />
 
         <div className="card">
           <header>
@@ -203,20 +210,21 @@ function SystemDetail({ def, onBack }: { def: SystemDef; onBack: () => void }) {
               default carries — keep it honest by updating the figures as the seasons
               come in.
             </p>
-          ) : (
+          ) : !logged && (
             <p className="card-note">
-              Once you have actually tried this here, say what happened. Every result
-              in the app stops leaning on someone else's yard — including, and
-              especially, when the answer is that it did not work.
+              Once you have actually tried this here, record what happened in the yard
+              log above. Every result in the app stops leaning on someone else's yard —
+              including, and especially, when the answer is that it did not work.
             </p>
           )}
 
           <div className="row wrap" style={{ marginTop: 8 }}>
-            {EVIDENCE_ORDER.map((t) => (
+            {EVIDENCE_ORDER.filter((t) => !isLogResult(t)).map((t) => (
               <button
                 key={t}
                 className={`chip evidence-pick ${t}`}
                 aria-pressed={def.evidence === t}
+                disabled={!!logged}
                 title={EVIDENCE[t].blurb}
                 onClick={() => setOverride(def.id, { evidence: t })}
               >
@@ -225,7 +233,9 @@ function SystemDetail({ def, onBack }: { def: SystemDef; onBack: () => void }) {
             ))}
           </div>
           <p className="meta-line" style={{ marginTop: 6 }}>
-            {evidenceMeta(def.evidence).blurb}
+            {logged
+              ? `${evidenceMeta(def.evidence).label}, from the yard log. Delete its results there to set an untested tier.`
+              : evidenceMeta(def.evidence).blurb}
           </p>
 
           {!editing && (

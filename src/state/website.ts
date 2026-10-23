@@ -1,10 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
-  sendStatuses, statusesFor, statusSignature, SyncError, type SyncChange,
+  statusesFor, statusSignature, SyncError, syncWithSite, uploadPhoto, type SyncChange,
 } from '../engine/websiteSync';
 import type { Design } from '../engine/types';
+import { logSignature } from '../engine/yardLog';
+import { forgetPhoto, keptPhoto } from './photos';
 import { useApp } from './store';
+import { useYardLog } from './yardLog';
 
 /**
  * The connection to the yard's website, and what it was last told.
@@ -12,6 +15,12 @@ import { useApp } from './store';
  * Kept apart from the design on purpose: an exported design is a file
  * people pass around, and the key in here can change what the website says.
  */
+
+/** Everything a sync would send, as one string: unchanged means nothing to send. */
+export function syncSignature(design: Design): string {
+  const log = useYardLog.getState();
+  return [statusSignature(statusesFor(design)), logSignature(log.entries), log.pending.join(',')].join('#');
+}
 export interface LastSend {
   at: number;
   ok: boolean;
@@ -23,7 +32,7 @@ interface WebsiteState {
   address: string;
   key: string;
   auto: boolean;
-  /** Signature of the statuses the website last accepted. */
+  /** Signature of the statuses and log the website last accepted. */
   lastSent: string | null;
   last: LastSend | null;
   busy: boolean;
@@ -31,7 +40,10 @@ interface WebsiteState {
   retry: boolean;
 
   setConnection: (patch: Partial<Pick<WebsiteState, 'address' | 'key' | 'auto'>>) => void;
-  /** Send if anything changed since the last accepted send, or always if forced. */
+  /**
+   * Send if anything changed since the last accepted send, or always if
+   * forced, which is also how this device hears about other devices' entries.
+   */
   send: (design: Design, force?: boolean) => Promise<void>;
 }
 
@@ -57,24 +69,50 @@ export const useWebsite = create<WebsiteState>()(
       send: async (design, force = false) => {
         const { address, key, busy, lastSent } = get();
         if (!address.trim() || !key.trim() || busy) return;
-        const statuses = statusesFor(design);
-        const signature = statusSignature(statuses);
-        if (!force && signature === lastSent) return;
+        if (!force && syncSignature(design) === lastSent) return;
 
         set({ busy: true });
         try {
-          const reply = await sendStatuses(address, key, statuses);
-          const n = reply.changed.length;
+          // Photos first, so each entry goes with its photo. One that cannot
+          // go now stays queued and does not hold up the rest of the sync.
+          let photoTrouble = '';
+          for (const id of [...useYardLog.getState().pending]) {
+            const entry = useYardLog.getState().entries.find((e) => e.id === id);
+            const blob = await keptPhoto(id);
+            if (!entry || entry.deleted || !blob) {
+              useYardLog.getState().dropPending(id);
+              continue;
+            }
+            try {
+              useYardLog.getState().photoSent(id, await uploadPhoto(address, key, id, blob));
+              void forgetPhoto(id);
+            } catch (e) {
+              // A refused key fails the sync below too, and says so there.
+              photoTrouble = e instanceof Error ? e.message : 'A photo didn’t send.';
+              break;
+            }
+          }
+
+          const reply = await syncWithSite(
+            address, key, statusesFor(useApp.getState().design), useYardLog.getState().entries,
+          );
+          useYardLog.getState().mergeFromSite(reply.entries);
+
+          const parts: string[] = [];
+          if (reply.saved) parts.push(`${reply.saved} log ${reply.saved === 1 ? 'entry' : 'entries'} saved`);
+          if (reply.changed.length) parts.push(`${reply.changed.length} ${reply.changed.length === 1 ? 'change' : 'changes'}`);
+          const waiting = useYardLog.getState().pending.length;
           set({
-            lastSent: signature,
-            retry: false,
+            // Taken after the merge, which may have changed the design's
+            // tiers, so the next check finds nothing new to send.
+            lastSent: syncSignature(useApp.getState().design),
+            retry: waiting > 0,
             last: {
               at: Date.now(),
-              ok: true,
+              ok: !photoTrouble,
               changed: reply.changed,
-              message: n === 0
-                ? `${reply.site} is up to date.`
-                : `${n} ${n === 1 ? 'change' : 'changes'} on ${reply.site}.`,
+              message: (parts.length ? `${parts.join(', ')} on ${reply.site}.` : `${reply.site} is up to date.`)
+                + (photoTrouble ? ` ${waiting === 1 ? 'A photo is' : `${waiting} photos are`} still waiting: ${photoTrouble}` : ''),
             },
           });
         } catch (e) {
@@ -93,18 +131,22 @@ export const useWebsite = create<WebsiteState>()(
 );
 
 /**
- * Send status changes on their own, a moment after the last edit, so marking
- * five systems in a row is one push rather than five. Also sends on start
- * (anything changed while this was closed) and when the device comes back
- * online after a failed send. Returns a function that stops it.
+ * Sync on its own: a moment after the last edit, so marking five systems in
+ * a row is one push rather than five; on start, and whenever the app comes
+ * back into view after a minute away, to pick up entries made on other
+ * devices; and when the device comes back online after a failed send.
+ * Returns a function that stops it.
  */
 export function startWebsiteSync(delayMs = 2500): () => void {
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const sendSoon = () => {
+  let force = false;
+  const sendSoon = (pull = false) => {
+    force ||= pull;
     clearTimeout(timer);
     timer = setTimeout(() => {
       const w = useWebsite.getState();
-      if (w.auto) void w.send(useApp.getState().design);
+      if (w.auto) void w.send(useApp.getState().design, force);
+      force = false;
     }, delayMs);
   };
 
@@ -112,20 +154,34 @@ export function startWebsiteSync(delayMs = 2500): () => void {
     if (s.design.overrides !== prev.design.overrides
       || s.design.customSystems !== prev.design.customSystems) sendSoon();
   });
-  // A new address or key has been told nothing: send once typing stops.
+  const stopLog = useYardLog.subscribe((s, prev) => {
+    if (s.entries !== prev.entries || s.pending !== prev.pending) sendSoon();
+  });
   const stopConnection = useWebsite.subscribe((s, prev) => {
-    if (s.address !== prev.address || s.key !== prev.key) sendSoon();
+    // A new address or key has been told nothing: send once typing stops.
+    if (s.address !== prev.address || s.key !== prev.key) sendSoon(true);
+    // An edit made while a sync was under way (a photo can take a while) was
+    // turned away as busy: send it now. Not after a failure, or it would loop.
+    else if (prev.busy && !s.busy && s.last?.ok
+      && syncSignature(useApp.getState().design) !== s.lastSent) sendSoon();
   });
   const onOnline = () => {
-    if (useWebsite.getState().retry) sendSoon();
+    if (useWebsite.getState().retry) sendSoon(true);
+  };
+  const onVisible = () => {
+    const last = useWebsite.getState().last?.at ?? 0;
+    if (document.visibilityState === 'visible' && Date.now() - last > 60_000) sendSoon(true);
   };
   window.addEventListener('online', onOnline);
-  sendSoon();
+  document.addEventListener('visibilitychange', onVisible);
+  sendSoon(true);
 
   return () => {
     clearTimeout(timer);
     stopDesign();
+    stopLog();
     stopConnection();
     window.removeEventListener('online', onOnline);
+    document.removeEventListener('visibilitychange', onVisible);
   };
 }

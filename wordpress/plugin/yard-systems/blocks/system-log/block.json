@@ -1,0 +1,14 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "yard-systems/system-log",
+	"title": "System yard log",
+	"category": "widgets",
+	"icon": "backup",
+	"description": "The public entries of the yard log for the current system, newest first: what was tried, when, and how it went. Written in the simulator.",
+	"usesContext": [ "postId", "postType" ],
+	"supports": { "html": false },
+	"textdomain": "yard-systems",
+	"editorScript": "yard-systems-editor",
+	"render": "file:./render.php"
+}

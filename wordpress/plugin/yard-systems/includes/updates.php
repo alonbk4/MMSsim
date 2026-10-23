@@ -55,6 +55,15 @@ function yard_systems_content_updates() {
 				array( 'trellises', 'ys_sim_id', 'grow-trellis' ),
 			),
 		),
+
+		// Biochar is two systems in the simulator, the kiln and the tote it
+		// is charged in, and the yard log of both belongs on its page.
+		3 => array(
+			'text' => array(),
+			'meta' => array(
+				array( 'biochar', 'ys_sim_id', 'biochar-kiln biochar-tote', 'biochar-kiln' ),
+			),
+		),
 	);
 }
 
@@ -91,9 +100,12 @@ function yard_systems_run_content_updates() {
 			$log[] = "updated {$type} {$slug}";
 		}
 
-		foreach ( $batch['meta'] ?? array() as list( $slug, $key, $value ) ) {
+		// A value is set while the field still holds what it is expected to
+		// (nothing, unless a fourth item says what), never over an edit.
+		foreach ( $batch['meta'] ?? array() as $item ) {
+			list( $slug, $key, $value, $was ) = array_pad( $item, 4, '' );
 			$post = get_page_by_path( $slug, OBJECT, 'yard_system' );
-			if ( $post && '' === (string) get_post_meta( $post->ID, $key, true ) ) {
+			if ( $post && $was === (string) get_post_meta( $post->ID, $key, true ) ) {
 				update_post_meta( $post->ID, $key, $value );
 				$log[] = "set {$key} on {$slug}";
 			}

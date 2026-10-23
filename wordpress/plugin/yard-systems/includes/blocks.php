@@ -1,7 +1,7 @@
 <?php
 /**
- * Three server-rendered blocks: the menu, the facts panel on a system, and
- * the inquiry form. They render in PHP so they always reflect the systems as
+ * Server-rendered blocks: the menu, a system's picture, facts panel and yard
+ * log, and the inquiry form. They render in PHP so they always reflect the systems as
  * they are now, and need no build step to edit.
  */
 
@@ -18,7 +18,7 @@ add_action( 'init', function () {
 		true
 	);
 
-	foreach ( array( 'system-menu', 'system-facts', 'system-art', 'inquiry-form' ) as $block ) {
+	foreach ( array( 'system-menu', 'system-facts', 'system-art', 'system-log', 'inquiry-form' ) as $block ) {
 		register_block_type( YARD_SYSTEMS_DIR . 'blocks/' . $block );
 	}
 } );
