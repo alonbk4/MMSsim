@@ -58,7 +58,7 @@ function yard_systems_fact_fields() {
 	return array(
 		'ys_cost'   => array(
 			'label' => __( 'Materials, roughly', 'yard-systems' ),
-			'help'  => __( 'What the parts cost, not the labour. A range is fine.', 'yard-systems' ),
+			'help'  => __( 'What the parts cost, not the labor. A range is fine.', 'yard-systems' ),
 		),
 		'ys_space'  => array(
 			'label' => __( 'Space it needs', 'yard-systems' ),

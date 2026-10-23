@@ -82,6 +82,13 @@ function yard_systems_content_updates() {
 			'text'    => array(),
 			'systems' => array( 'wall-pockets', 'hydroponic-tower' ),
 		),
+
+		// American spelling, now that the bucket drip's page is published.
+		6 => array(
+			'text' => array(
+				array( 'yard_system', 'bucket-drip', 'Put a rain tank uphill and that labour disappears.', 'Put a rain tank uphill and that labor disappears.' ),
+			),
+		),
 	);
 }
 
