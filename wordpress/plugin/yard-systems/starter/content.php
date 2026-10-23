@@ -155,7 +155,7 @@ return array(
 
 		array(
 			'slug'     => 'hot-composter',
-			'sim'      => 'aerobin',
+			'sim'      => 'aerobin food-recycler',
 			'title'    => 'Insulated hot composter',
 			'category' => 'soil',
 			'tier'     => 'works',
@@ -187,7 +187,7 @@ return array(
 
 		array(
 			'slug'     => 'biochar',
-			'sim'      => 'biochar-kiln',
+			'sim'      => 'biochar-kiln biochar-tote',
 			'title'    => 'Biochar, made and charged',
 			'category' => 'soil',
 			'tier'     => 'works',
@@ -302,7 +302,7 @@ return array(
 
 		array(
 			'slug'     => 'hanging-peppers',
-			'sim'      => 'upside-down-planters',
+			'sim'      => 'upside-down-planters pump-drip-kit',
 			'title'    => 'Hanging peppers on a timed drip',
 			'category' => 'food',
 			'tier'     => 'researched',
@@ -380,7 +380,7 @@ return array(
 
 		array(
 			'slug'     => 'rain-tank',
-			'sim'      => 'first-flush',
+			'sim'      => 'poly-tank first-flush roof-catchment',
 			'title'    => 'Rain tank with first-flush diverter',
 			'category' => 'water',
 			'tier'     => 'researched',
@@ -435,6 +435,48 @@ return array(
 			'content'  =>
 				$p( $you( 'Is this in your yard? Set the tier, then publish.' ) )
 				. $p( 'A vining crop grown up rather than sprawling yields about 40% more, and the moving air keeps mildew down. The costs are real: more leaf in the wind means more water, and a trellis on the sunny side of a bed shades everything behind it.' ),
+		),
+
+		array(
+			'slug'     => 'wall-pockets',
+			'sim'      => 'felt-hanging-bags',
+			'title'    => 'Felt wall pockets',
+			'category' => 'food',
+			'tier'     => 'researched',
+			'status'   => 'draft',
+			'summary'  => 'Felt pockets hung on a wall or fence: herbs, strawberries and cut lettuce at the back door, on almost no ground.',
+			'facts'    => array(
+				'ys_cost'   => 'About $4 a pocket, mix included',
+				'ys_space'  => 'A wall or fence with sun; almost no ground',
+				'ys_upkeep' => 'Daily watering in summer, twice in a heatwave — or a drip line',
+				'ys_season' => 'Late spring to frost',
+				'ys_fits'   => 'Small yards and patios, and anyone with a sunny wall doing nothing',
+			),
+			'content'  =>
+				$p( $you( 'What do you grow in yours, and where is it hung? Then mark it tested in the simulator, which publishes it.' ) )
+				. $p( 'Each pocket holds two or three quarts of mix, open to the air on both faces, so it dries out faster than anything else here: daily watering in summer, twice a day in a heatwave. Put the pockets on a drip line, or expect to lose plants.' )
+				. $p( 'They won’t feed anyone, and that isn’t the point. They put herbs, strawberries and cut lettuce within reach of the kitchen, on a wall that was growing nothing. A south wall can bake them; the sunniest spot isn’t always the right one.' ),
+		),
+
+		array(
+			'slug'     => 'hydroponic-tower',
+			'sim'      => 'indoor-hydroponic-tower',
+			'title'    => 'Indoor hydroponic tower',
+			'category' => 'food',
+			'tier'     => 'researched',
+			'status'   => 'draft',
+			'summary'  => 'Salad greens and herbs in a Michigan February, from a lit tower on the kitchen floor. Bought, not built: the help is in choosing and running it.',
+			'facts'    => array(
+				'ys_cost'   => 'Around $900 for the tower, then about $35 a month for power, seed pods and nutrients',
+				'ys_space'  => 'About 5 square feet of floor near an outlet; no sun needed',
+				'ys_upkeep' => 'Top up the water and harvest every week',
+				'ys_season' => 'All year; it earns its keep from November to April',
+				'ys_fits'   => 'Households who want fresh greens in winter and have no ground or sun to grow them',
+			),
+			'content'  =>
+				$p( $you( 'How long has yours been running, and what does it grow best? Then mark it tested in the simulator, which publishes it.' ) )
+				. $p( 'Do the arithmetic before buying one. Thirty-odd plant sites of greens and herbs come to about 4,000 calories of food a year, for about 384 kWh of light and pumping: roughly one percent of the energy going in comes back out as food. As a way to feed a household, it is the worst thing on this menu.' )
+				. $p( 'That isn’t a reason not to buy one. It grows fresh leaves in a Michigan February with no ground, no sun and no season, on a fraction of the water a bed uses. Buy it for winter salad and it is excellent.' ),
 		),
 	),
 );

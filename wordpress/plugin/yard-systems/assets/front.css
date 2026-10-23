@@ -6,6 +6,7 @@
 
 .ys-menu,
 .ys-facts,
+.ys-log,
 .ys-inquiry,
 .ys-listbar,
 .ys-art-block,
@@ -421,6 +422,92 @@
 	font-size: .72rem;
 	letter-spacing: .06em;
 	color: var(--ys-muted);
+}
+
+/* ---------- the yard log on a system's page ---------- */
+
+.ys-log {
+	margin-top: clamp(2.5rem, 5vw, 4rem);
+}
+
+.ys-log__title {
+	margin: 0 0 1.5rem;
+	padding-bottom: .9rem;
+	border-bottom: 1.5px solid var(--ys-ink);
+	font-family: var(--ys-display);
+	font-size: clamp(1.5rem, 2.6vw, 2rem);
+	font-weight: 500;
+	line-height: 1.15;
+}
+
+.ys-log__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+/* A rule down the left with a tick per entry, like a page of field notes. */
+.ys-log__entry {
+	position: relative;
+	padding: 0 0 2rem 1.6rem;
+	border-left: 1px dashed var(--ys-line);
+}
+
+.ys-log__entry:last-child {
+	padding-bottom: .25rem;
+	border-left-color: transparent;
+}
+
+.ys-log__entry::before {
+	content: "";
+	position: absolute;
+	left: -5px;
+	top: .3rem;
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	background: var(--ys-paper);
+	border: 1.5px solid var(--ys-ink);
+}
+
+.ys-log__meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: .5rem .9rem;
+	margin: 0 0 .65rem;
+	font-family: var(--ys-mono);
+	font-size: .75rem;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+	color: var(--ys-muted);
+}
+
+.ys-log__note p {
+	margin: 0 0 .7em;
+	font-size: 1.02rem;
+	line-height: 1.6;
+	color: var(--ys-ink);
+}
+
+.ys-log__note p:last-child {
+	margin-bottom: 0;
+}
+
+.ys-log__photo {
+	margin: 1rem 0 0;
+}
+
+/* Full width when it's landscape; an upright phone photo keeps its shape
+   but not the whole screen. */
+.ys-log__photo img {
+	display: block;
+	width: auto;
+	max-width: 100%;
+	height: auto;
+	max-height: min(34rem, 80vh);
+	border-radius: 14px;
+	border: 1px solid var(--ys-line);
 }
 
 /* ---------- the facts sheet on a system's page ---------- */

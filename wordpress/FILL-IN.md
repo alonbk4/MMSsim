@@ -6,11 +6,17 @@ winter shutdown, and the biochar kiln.
 
 ## For you
 
-- [ ] **Statuses.** Connect the simulator to the site (Site tab → Website,
-      with the address and key from WordPress → Settings → Yard site). Every
-      status you set there then shows on the site, and anything you mark as
-      tested is published.
-- [ ] **Photos.** One per system, as its featured image (shot list below).
+- [x] **Statuses.** The simulator is connected, and the site agrees with it.
+- [ ] **Every device.** Open the simulator on each phone, tablet and browser
+      you've used it on and connect it (Site tab → Website). Anything marked
+      there before the yard log existed joins the log as a private entry
+      dated the day it was carried over; check those and fix the dates.
+- [ ] **The yard log.** Six entries are in it already, from what the yard
+      had recorded; they show on the system pages. Read them, and add your
+      own as things happen (Catalog → a system → Record a result).
+- [ ] **Photos.** A photo added to a yard log entry becomes that system's
+      picture, so the shot list below can be ticked off from the yard. A
+      featured image set in WordPress still wins.
 - [ ] **Licensing.** You'll build for people: find out what Michigan requires
       for paid work on someone else's property.
 - [ ] **Insurance.** Check your homeowner's policy covers visitors who come on

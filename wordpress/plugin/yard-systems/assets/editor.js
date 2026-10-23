@@ -1,5 +1,5 @@
 /*
- * The three blocks render on the server; the editor shows that same render.
+ * The blocks render on the server; the editor shows that same render.
  * Titles, icons and attributes come from each block.json.
  */
 ( function ( wp ) {
@@ -7,7 +7,7 @@
 	const ServerSideRender = wp.serverSideRender;
 	const { useBlockProps } = wp.blockEditor;
 
-	[ 'yard-systems/system-menu', 'yard-systems/system-facts', 'yard-systems/system-art', 'yard-systems/inquiry-form' ].forEach( function ( name ) {
+	[ 'yard-systems/system-menu', 'yard-systems/system-facts', 'yard-systems/system-art', 'yard-systems/system-log', 'yard-systems/inquiry-form' ].forEach( function ( name ) {
 		wp.blocks.registerBlockType( name, {
 			edit: function ( props ) {
 				return el(

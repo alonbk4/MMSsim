@@ -55,6 +55,33 @@ function yard_systems_content_updates() {
 				array( 'trellises', 'ys_sim_id', 'grow-trellis' ),
 			),
 		),
+
+		// Biochar is two systems in the simulator, the kiln and the tote it
+		// is charged in, and the yard log of both belongs on its page.
+		3 => array(
+			'text' => array(),
+			'meta' => array(
+				array( 'biochar', 'ys_sim_id', 'biochar-kiln biochar-tote', 'biochar-kiln' ),
+			),
+		),
+
+		// More website systems that are several in the simulator. The rain
+		// tank's status follows the tank, not the diverter on its inlet.
+		4 => array(
+			'text' => array(),
+			'meta' => array(
+				array( 'rain-tank', 'ys_sim_id', 'poly-tank first-flush roof-catchment', 'first-flush' ),
+				array( 'hanging-peppers', 'ys_sim_id', 'upside-down-planters pump-drip-kit', 'upside-down-planters' ),
+				array( 'hot-composter', 'ys_sim_id', 'aerobin food-recycler', 'aerobin' ),
+			),
+		),
+
+		// Two more systems from the yard, as drafts: each is published when
+		// the simulator records a result for it.
+		5 => array(
+			'text'    => array(),
+			'systems' => array( 'wall-pockets', 'hydroponic-tower' ),
+		),
 	);
 }
 
@@ -91,9 +118,28 @@ function yard_systems_run_content_updates() {
 			$log[] = "updated {$type} {$slug}";
 		}
 
-		foreach ( $batch['meta'] ?? array() as list( $slug, $key, $value ) ) {
+		// Systems added to the starter content since, unless already here
+		// (in any status, the bin included: one deleted on purpose stays gone).
+		if ( ! empty( $batch['systems'] ) ) {
+			$content = require YARD_SYSTEMS_DIR . 'starter/content.php';
+			foreach ( $content['systems'] as $order => $system ) {
+				if ( ! in_array( $system['slug'], $batch['systems'], true ) ) {
+					continue;
+				}
+				if ( yard_systems_starter_exists( $system['slug'], 'yard_system' ) || yard_systems_starter_exists( $system['slug'] . '__trashed', 'yard_system' ) ) {
+					$log[] = "skipped yard_system {$system['slug']}: already here";
+				} elseif ( yard_systems_insert_system( $system, ( $order + 1 ) * 10 ) ) {
+					$log[] = "added yard_system {$system['slug']} as a draft";
+				}
+			}
+		}
+
+		// A value is set while the field still holds what it is expected to
+		// (nothing, unless a fourth item says what), never over an edit.
+		foreach ( $batch['meta'] ?? array() as $item ) {
+			list( $slug, $key, $value, $was ) = array_pad( $item, 4, '' );
 			$post = get_page_by_path( $slug, OBJECT, 'yard_system' );
-			if ( $post && '' === (string) get_post_meta( $post->ID, $key, true ) ) {
+			if ( $post && $was === (string) get_post_meta( $post->ID, $key, true ) ) {
 				update_post_meta( $post->ID, $key, $value );
 				$log[] = "set {$key} on {$slug}";
 			}

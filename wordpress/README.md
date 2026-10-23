@@ -40,13 +40,72 @@ description and link-preview tags, so a page shared on Facebook, Nextdoor or
 in a text shows a title, a line and a picture. These step aside when an SEO
 plugin is active, so nothing is printed twice.
 
-**Statuses from the simulator.** The simulator is where results get
-recorded, and it pushes them here: Site tab → Website, with the address and
-the key from *Settings → Yard site*. Each website system follows one
-simulator system (*Simulator system* in its sidebar box); a push sets its
-badge, and publishes it if the simulator says it has been tested in the
-yard. Nothing is ever unpublished by a push. The key can change statuses and
-nothing else; *Make a new key* retires the old one.
+**The yard log.** What was tried in the yard, when, and how it went: each
+entry a date, a result (worked, partly worked, didn't work, or just a note),
+a note and a photo. It is written in the simulator (Catalog → a system →
+Yard log), on whichever device is at hand, and kept here, so every device
+reads and adds to the same record. Connect each device under Site tab →
+Website, with the address and the key from *Settings → Yard site*.
+
+- Each website system follows a simulator system (*Simulator system* in its
+  sidebar box; several, separated by spaces, where one website system is
+  more than one in the simulator, as biochar is). Its badge is the latest
+  result in the log, and a system with a result is published. Nothing is
+  ever unpublished by the log.
+- Public entries show on the system's page under *From the yard log*, newest
+  first, and the newest photo stands in as the system's picture until it has
+  a featured image.
+- A private entry sets the badge like any other and is never shown. Its
+  photo is a private attachment, in no public listing; the file itself has a
+  random name.
+- Photos are resized and re-encoded in the simulator before they are sent,
+  which leaves their location and other camera data behind.
+- Devices can record offline. Each entry carries the time it last changed and
+  the newer copy wins, entry by entry; deleted entries stay as markers so no
+  device brings them back.
+
+The key can set badges, add to the log and send its photos, and nothing
+else; *Make a new key* retires the old one.
+
+### What the simulator has to send
+
+The simulator lives in `src/` and changes separately, so this is the
+contract between the two. Everything is `POST` under
+`/wp-json/yard-systems/v1/`, carries `key`, and gets `401` without the right
+one. Cross-origin calls work through the REST API's own CORS handling.
+
+**`/sync`**, JSON: `{ key, statuses, entries }`.
+
+- `statuses`: every simulator system's tier, by simulator id
+  (`experimental`, `researched`, `testedFailed`, `testedPartial`,
+  `testedSuccess`). Only the untested two are taken from here: a tested tier
+  comes from the log, so a device that missed a deletion can't put a result
+  back.
+- `entries`: the device's whole log, deleted entries included. Each entry:
+  `id` and `system` (`[A-Za-z0-9_.-]`, up to 80), `date` (`YYYY-MM-DD`,
+  `YYYY-MM` or `''`), `result` (one of the three tested tiers, or `null` for
+  a note), `note` (plain text, kept exactly as sent, up to 4,000
+  characters), `private` (boolean), `photo` (`{ id }` from `/photo`, or
+  `null`), `created` and `updated` (milliseconds), and `deleted: true` once
+  deleted.
+- An entry replaces the site's copy only if its `updated` is later. A
+  deleted entry keeps its id, system and times and loses its note and photo.
+- A system's result is that of its latest live entry with a result, latest
+  meaning by `date` (as a string, so undated first and a month before its
+  days), then `created`, then `id`. Both sides must order entries the same
+  way.
+- Reply: `{ site, url, changed: [{ title, change }], saved, systems, entries }`,
+  where `entries` is the site's whole log after the merge, each photo as
+  `{ id, url, thumb, w, h }`, and `saved` is how many sent entries were news.
+
+**`/photo`**, multipart: `key`, `entry` (the entry's id), `photo` (JPEG, PNG
+or WebP, up to 15 MB). Reply: `{ id, url, thumb, w, h }`. The same file sent
+again for the same entry returns the copy already there. A photo no entry
+points to after a day is deleted.
+
+**`/statuses`**, JSON: `{ key, statuses }`. What simulators from before the
+log send; still answered. It also takes tested tiers, for systems the log
+has never mentioned.
 
 **Journal.** Six first articles, written from the yard's own record, install
 as drafts: they are in your voice, so nothing is published under your name

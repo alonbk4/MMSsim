@@ -5,6 +5,7 @@
  *
  * Every card and system page goes through here, so adding a featured image
  * in the dashboard is all it takes to swap the drawing for the real thing.
+ * Without one, the latest photo in the system's public yard log stands in.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -34,6 +35,8 @@ function yard_systems_glyph_name( $post_id ) {
 		'rain-tank'       => 'tank',
 		'bucket-drip'     => 'bucketdrip',
 		'trellises'       => 'trellis',
+		'wall-pockets'    => 'pocket',
+		'hydroponic-tower' => 'tower',
 	);
 	$slug = get_post_field( 'post_name', $post_id );
 	if ( isset( $by_slug[ $slug ] ) ) {
@@ -76,11 +79,20 @@ function yard_systems_specimen_number( $post_id ) {
  */
 function yard_systems_art( $post_id, $size = 'card' ) {
 	$category = yard_systems_category_slug( $post_id );
-	if ( has_post_thumbnail( $post_id ) ) {
+	$photo    = has_post_thumbnail( $post_id ) ? (int) get_post_thumbnail_id( $post_id ) : yard_systems_log_cover( $post_id );
+	if ( $photo ) {
 		return sprintf(
 			'<div class="ys-art ys-art--photo ys-art--%1$s">%2$s</div>',
 			esc_attr( $size ),
-			get_the_post_thumbnail( $post_id, 'hero' === $size ? 'large' : 'medium_large', array( 'loading' => 'hero' === $size ? 'eager' : 'lazy' ) )
+			wp_get_attachment_image(
+				$photo,
+				'hero' === $size ? 'large' : 'medium_large',
+				false,
+				array(
+					'loading' => 'hero' === $size ? 'eager' : 'lazy',
+					'alt'     => get_the_title( $post_id ),
+				)
+			)
 		);
 	}
 	$number = yard_systems_specimen_number( $post_id );
