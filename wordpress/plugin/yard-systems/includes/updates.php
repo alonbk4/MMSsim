@@ -64,6 +64,17 @@ function yard_systems_content_updates() {
 				array( 'biochar', 'ys_sim_id', 'biochar-kiln biochar-tote', 'biochar-kiln' ),
 			),
 		),
+
+		// More website systems that are several in the simulator. The rain
+		// tank's status follows the tank, not the diverter on its inlet.
+		4 => array(
+			'text' => array(),
+			'meta' => array(
+				array( 'rain-tank', 'ys_sim_id', 'poly-tank first-flush roof-catchment', 'first-flush' ),
+				array( 'hanging-peppers', 'ys_sim_id', 'upside-down-planters pump-drip-kit', 'upside-down-planters' ),
+				array( 'hot-composter', 'ys_sim_id', 'aerobin food-recycler', 'aerobin' ),
+			),
+		),
 	);
 }
 

@@ -67,6 +67,46 @@ Website, with the address and the key from *Settings → Yard site*.
 The key can set badges, add to the log and send its photos, and nothing
 else; *Make a new key* retires the old one.
 
+### What the simulator has to send
+
+The simulator lives in `src/` and changes separately, so this is the
+contract between the two. Everything is `POST` under
+`/wp-json/yard-systems/v1/`, carries `key`, and gets `401` without the right
+one. Cross-origin calls work through the REST API's own CORS handling.
+
+**`/sync`**, JSON: `{ key, statuses, entries }`.
+
+- `statuses`: every simulator system's tier, by simulator id
+  (`experimental`, `researched`, `testedFailed`, `testedPartial`,
+  `testedSuccess`). Only the untested two are taken from here: a tested tier
+  comes from the log, so a device that missed a deletion can't put a result
+  back.
+- `entries`: the device's whole log, deleted entries included. Each entry:
+  `id` and `system` (`[A-Za-z0-9_.-]`, up to 80), `date` (`YYYY-MM-DD`,
+  `YYYY-MM` or `''`), `result` (one of the three tested tiers, or `null` for
+  a note), `note` (plain text, kept exactly as sent, up to 4,000
+  characters), `private` (boolean), `photo` (`{ id }` from `/photo`, or
+  `null`), `created` and `updated` (milliseconds), and `deleted: true` once
+  deleted.
+- An entry replaces the site's copy only if its `updated` is later. A
+  deleted entry keeps its id, system and times and loses its note and photo.
+- A system's result is that of its latest live entry with a result, latest
+  meaning by `date` (as a string, so undated first and a month before its
+  days), then `created`, then `id`. Both sides must order entries the same
+  way.
+- Reply: `{ site, url, changed: [{ title, change }], saved, systems, entries }`,
+  where `entries` is the site's whole log after the merge, each photo as
+  `{ id, url, thumb, w, h }`, and `saved` is how many sent entries were news.
+
+**`/photo`**, multipart: `key`, `entry` (the entry's id), `photo` (JPEG, PNG
+or WebP, up to 15 MB). Reply: `{ id, url, thumb, w, h }`. The same file sent
+again for the same entry returns the copy already there. A photo no entry
+points to after a day is deleted.
+
+**`/statuses`**, JSON: `{ key, statuses }`. What simulators from before the
+log send; still answered. It also takes tested tiers, for systems the log
+has never mentioned.
+
 **Journal.** Six first articles, written from the yard's own record, install
 as drafts: they are in your voice, so nothing is published under your name
 until you have read it.

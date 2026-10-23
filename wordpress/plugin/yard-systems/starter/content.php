@@ -155,7 +155,7 @@ return array(
 
 		array(
 			'slug'     => 'hot-composter',
-			'sim'      => 'aerobin',
+			'sim'      => 'aerobin food-recycler',
 			'title'    => 'Insulated hot composter',
 			'category' => 'soil',
 			'tier'     => 'works',
@@ -187,7 +187,7 @@ return array(
 
 		array(
 			'slug'     => 'biochar',
-			'sim'      => 'biochar-kiln',
+			'sim'      => 'biochar-kiln biochar-tote',
 			'title'    => 'Biochar, made and charged',
 			'category' => 'soil',
 			'tier'     => 'works',
@@ -302,7 +302,7 @@ return array(
 
 		array(
 			'slug'     => 'hanging-peppers',
-			'sim'      => 'upside-down-planters',
+			'sim'      => 'upside-down-planters pump-drip-kit',
 			'title'    => 'Hanging peppers on a timed drip',
 			'category' => 'food',
 			'tier'     => 'researched',
@@ -380,7 +380,7 @@ return array(
 
 		array(
 			'slug'     => 'rain-tank',
-			'sim'      => 'first-flush',
+			'sim'      => 'poly-tank first-flush roof-catchment',
 			'title'    => 'Rain tank with first-flush diverter',
 			'category' => 'water',
 			'tier'     => 'researched',
