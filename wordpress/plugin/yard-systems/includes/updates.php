@@ -75,6 +75,13 @@ function yard_systems_content_updates() {
 				array( 'hot-composter', 'ys_sim_id', 'aerobin food-recycler', 'aerobin' ),
 			),
 		),
+
+		// Two more systems from the yard, as drafts: each is published when
+		// the simulator records a result for it.
+		5 => array(
+			'text'    => array(),
+			'systems' => array( 'wall-pockets', 'hydroponic-tower' ),
+		),
 	);
 }
 
@@ -109,6 +116,22 @@ function yard_systems_run_content_updates() {
 				)
 			);
 			$log[] = "updated {$type} {$slug}";
+		}
+
+		// Systems added to the starter content since, unless already here
+		// (in any status, the bin included: one deleted on purpose stays gone).
+		if ( ! empty( $batch['systems'] ) ) {
+			$content = require YARD_SYSTEMS_DIR . 'starter/content.php';
+			foreach ( $content['systems'] as $order => $system ) {
+				if ( ! in_array( $system['slug'], $batch['systems'], true ) ) {
+					continue;
+				}
+				if ( yard_systems_starter_exists( $system['slug'], 'yard_system' ) || yard_systems_starter_exists( $system['slug'] . '__trashed', 'yard_system' ) ) {
+					$log[] = "skipped yard_system {$system['slug']}: already here";
+				} elseif ( yard_systems_insert_system( $system, ( $order + 1 ) * 10 ) ) {
+					$log[] = "added yard_system {$system['slug']} as a draft";
+				}
+			}
 		}
 
 		// A value is set while the field still holds what it is expected to

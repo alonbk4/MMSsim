@@ -22,6 +22,36 @@ function yard_systems_starter_exists( $slug, $post_type ) {
 }
 
 /**
+ * One system from starter/content.php, as written there.
+ *
+ * @return int|false Its id, or false if it could not be made.
+ */
+function yard_systems_insert_system( array $system, $menu_order ) {
+	$id = wp_insert_post(
+		array(
+			'post_type'    => 'yard_system',
+			'post_status'  => $system['status'],
+			'post_name'    => $system['slug'],
+			'post_title'   => $system['title'],
+			'post_excerpt' => $system['summary'],
+			'post_content' => $system['content'],
+			'menu_order'   => $menu_order,
+		),
+		true
+	);
+	if ( is_wp_error( $id ) ) {
+		return false;
+	}
+	wp_set_object_terms( $id, $system['category'], 'system_category' );
+	update_post_meta( $id, 'ys_tier', $system['tier'] );
+	update_post_meta( $id, 'ys_sim_id', $system['sim'] );
+	foreach ( $system['facts'] as $key => $value ) {
+		update_post_meta( $id, $key, $value );
+	}
+	return $id;
+}
+
+/**
  * @return int Number of items created.
  */
 function yard_systems_install_starter() {
@@ -61,30 +91,8 @@ function yard_systems_install_starter() {
 	}
 
 	foreach ( $content['systems'] as $order => $system ) {
-		if ( yard_systems_starter_exists( $system['slug'], 'yard_system' ) ) {
-			continue;
-		}
-		$id = wp_insert_post(
-			array(
-				'post_type'    => 'yard_system',
-				'post_status'  => $system['status'],
-				'post_name'    => $system['slug'],
-				'post_title'   => $system['title'],
-				'post_excerpt' => $system['summary'],
-				'post_content' => $system['content'],
-				'menu_order'   => ( $order + 1 ) * 10,
-			),
-			true
-		);
-		if ( is_wp_error( $id ) ) {
-			continue;
-		}
-		++$created;
-		wp_set_object_terms( $id, $system['category'], 'system_category' );
-		update_post_meta( $id, 'ys_tier', $system['tier'] );
-		update_post_meta( $id, 'ys_sim_id', $system['sim'] );
-		foreach ( $system['facts'] as $key => $value ) {
-			update_post_meta( $id, $key, $value );
+		if ( ! yard_systems_starter_exists( $system['slug'], 'yard_system' ) && yard_systems_insert_system( $system, ( $order + 1 ) * 10 ) ) {
+			++$created;
 		}
 	}
 

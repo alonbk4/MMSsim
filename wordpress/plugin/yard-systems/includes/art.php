@@ -35,6 +35,8 @@ function yard_systems_glyph_name( $post_id ) {
 		'rain-tank'       => 'tank',
 		'bucket-drip'     => 'bucketdrip',
 		'trellises'       => 'trellis',
+		'wall-pockets'    => 'pocket',
+		'hydroponic-tower' => 'tower',
 	);
 	$slug = get_post_field( 'post_name', $post_id );
 	if ( isset( $by_slug[ $slug ] ) ) {
