@@ -88,6 +88,13 @@ development `index.html` — its script tag points at `/src/main.tsx`, a file th
 only exists before the build. The browser gets a 404 for it and renders a blank
 page, which is the usual explanation for a Pages deploy that shows nothing.
 
+Leaving the source on a branch while this workflow also deploys is worse than
+either alone. GitHub's own "pages build and deployment" then runs on every push
+to that branch alongside the workflow, both publish, and whichever finishes
+last is what is live — the app on some pushes, a white page on others. That was
+the intermittent white page through October 2026. If that run shows up in the
+Actions tab again, the source has been switched back.
+
 `base: './'` in `vite.config.ts` keeps every asset path relative, so the same
 build works at a user site (`you.github.io`), at a project subpath
 (`you.github.io/MMSsim/`) and inside a Capacitor WebView, with no rebuild.
