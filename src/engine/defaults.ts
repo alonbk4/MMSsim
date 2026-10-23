@@ -2,47 +2,29 @@ import { CLIMATE_PRESETS, DEFAULT_SITE } from './climate';
 import { isEvidenceTier } from './resources';
 import { ANN_ARBOR } from './data/observed/ann-arbor';
 import type { Design, Placement, SiteProfile, SystemOverride } from './types';
+import { resultsFromLog, SEED_LOG, type LogResult } from './yardLog';
 
 export const DESIGN_VERSION = 5;
 
 /**
- * What has actually been tried in this yard, and how it went.
+ * The yard's own results, as the starting design carries them.
  *
  * The catalog never ships a tested tier — that would be claiming someone
- * else's result — so the yard's own record lives here, as the overrides the
- * starting design carries. Each entry was reported from the yard itself:
- *
- * - Aerobin: loaded mid-August 2026 with shredded leaves, cardboard cores,
- *   food-recycler output and diluted urine; 130 °F within five days, held
- *   about a week, then 120 °F, and back to 125 °F a day after reloading.
- * - Biochar: a batch made in August 2026, crushed and charged in a 27-gallon
- *   tote with diluted urine and aquaponics water, then worked into the Aerobin.
- * - Aquaponics: the IBC system, past a rough start with the fingerlings and
- *   "stable and running like a champ" by June 2026; its water feeds the
- *   worm tea, the biochar and the Aerobin.
- * - Nettle ferment and banana peel tea: the first batch of each floated,
- *   moulded and was dumped in August 2026; the second, weighted under, worked.
- *   One of two is a partial result, not a failure and not yet a success.
- *
- * `since` is the design version that introduced the entry. A saved design
- * older than that gets it once, on upgrade, and only for systems the user has
- * not already given a tier of their own — so an entry added later still
- * reaches people who opened the app before it existed.
+ * else's result. What was actually tried here lives in the yard log
+ * (`SEED_LOG` in yardLog.ts, plus whatever is recorded in the app), and at
+ * runtime the log sets every tested tier itself. This only mirrors the
+ * seeded results onto the default design, so code that runs the engine
+ * without the app — tests, the website sync — sees the same yard. It is read
+ * from the log rather than written out again, so the two can never disagree.
  */
-const YARD_LOG: { id: string; since: number; override: SystemOverride }[] = [
-  { id: 'aerobin', since: 4, override: { evidence: 'testedSuccess' } },
-  { id: 'biochar-kiln', since: 4, override: { evidence: 'testedSuccess' } },
-  { id: 'biochar-tote', since: 4, override: { evidence: 'testedSuccess' } },
-  { id: 'aquaponics', since: 5, override: { evidence: 'testedSuccess' } },
-  { id: 'nettle-patch', since: 5, override: { evidence: 'testedPartial' } },
-  { id: 'banana-peel-tea', since: 5, override: { evidence: 'testedPartial' } },
-];
-
-export const YARD_RESULTS: Record<string, SystemOverride> =
-  Object.fromEntries(YARD_LOG.map((e) => [e.id, e.override]));
+export const YARD_RESULTS: Record<string, SystemOverride> = Object.fromEntries(
+  Object.entries(resultsFromLog(SEED_LOG))
+    .filter((e): e is [string, LogResult] => e[1] !== null)
+    .map(([id, evidence]) => [id, { evidence }]),
+);
 
 const yardResults = (): Design['overrides'] =>
-  Object.fromEntries(YARD_LOG.map((e) => [e.id, { ...e.override }]));
+  Object.fromEntries(Object.entries(YARD_RESULTS).map(([id, ov]) => [id, { ...ov }]));
 
 let seq = 0;
 export function newId(prefix = 'p'): string {
@@ -107,12 +89,6 @@ export function normalizeDesign(raw: unknown): Design {
   if (!Array.isArray(d.placements)) return fallback;
 
   const overrides = normalizeOverrides(d.overrides);
-  const storedVersion = typeof d.version === 'number' ? d.version : 0;
-  for (const { id, since, override } of YARD_LOG) {
-    if (storedVersion < since && !overrides[id]?.evidence) {
-      overrides[id] = { ...overrides[id], ...override };
-    }
-  }
 
   return {
     version: DESIGN_VERSION,

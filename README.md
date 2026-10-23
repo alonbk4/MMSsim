@@ -38,13 +38,16 @@ instead — the partial tier is for when you know it disappointed but not by how
 much.
 
 Nothing in the catalog ships in a tested tier — those mean *you* built it,
-which no catalog entry can claim for you. This yard's own results live
-separately, in `YARD_RESULTS` in `src/engine/defaults.ts`, as overrides the
-starting design carries: the Aerobin, the biochar (made, then charged in a
-tote) and the aquaponics system are marked *Tested — works*; the nettle
-ferment and the banana peel tea, one moulded batch and one good one each,
-*Tested — partly worked*. A design saved before that list existed gets
-it once on upgrade, and never over a tier you set yourself. So the app tells you not just "this design covers 88% of your
+which no catalog entry can claim for you. A tested tier comes only from the
+yard log (Catalog → a system → Yard log): dated entries, each with a result,
+a note and maybe a photo, and a system's tier is its latest result. The log
+starts with this yard's own record (`SEED_LOG` in `src/engine/yardLog.ts`):
+the Aerobin, the biochar (made, then charged in a tote) and the aquaponics
+system *Tested — works*; the nettle ferment and the banana peel tea, one
+moulded batch and one good one each, *Tested — partly worked*.
+`YARD_RESULTS` in `src/engine/defaults.ts` mirrors those onto the starting
+design for code that runs without the app, and is read from the log so the
+two cannot drift. So the app tells you not just "this design covers 88% of your
 irrigation" but "…and only 58% if the researched and unproven parts come in at
 the bottom of their range." As you build things here, record what happened; the
 bands narrow and the answers stop being a literature review.
