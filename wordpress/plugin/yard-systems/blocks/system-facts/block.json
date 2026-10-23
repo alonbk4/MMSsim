@@ -1,0 +1,14 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "yard-systems/system-facts",
+	"title": "System facts",
+	"category": "widgets",
+	"icon": "list-view",
+	"description": "The result in this yard, the cost, space and upkeep of the current system, and the button to add it to the visitor's list.",
+	"usesContext": [ "postId", "postType" ],
+	"supports": { "html": false },
+	"textdomain": "yard-systems",
+	"editorScript": "yard-systems-editor",
+	"render": "file:./render.php"
+}

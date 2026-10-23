@@ -1,0 +1,13 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "yard-systems/inquiry-form",
+	"title": "Inquiry form",
+	"category": "widgets",
+	"icon": "email",
+	"description": "The inquiry form. Systems the visitor added to their list arrive already ticked. Submissions are saved under Inquiries and emailed.",
+	"supports": { "html": false, "multiple": false },
+	"textdomain": "yard-systems",
+	"editorScript": "yard-systems-editor",
+	"render": "file:./render.php"
+}

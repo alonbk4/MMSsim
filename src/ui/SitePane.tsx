@@ -15,6 +15,7 @@ import type { SiteProfile } from '../engine/types';
 import { useApp } from '../state/store';
 import { ClimateChart, SunHoursChart } from './charts';
 import { compact, Field, Icon } from './common';
+import { WebsiteCard } from './WebsiteCard';
 
 export function SitePane() {
   const site = useApp((s) => s.design.site);
@@ -183,6 +184,8 @@ export function SitePane() {
             />
           </div>
         </div>
+
+        <WebsiteCard />
 
         <p className="card-note">
           These presets are a starting point, not your site. Every one of them is worth

@@ -1,0 +1,197 @@
+# Checks the WordPress theme and plugin on every push that touches them, and
+# deploys them to the staging site over SSH.
+#
+# Staging is the test site, so any branch may deploy to it. When the real
+# domain goes live, give it its own PRODUCTION_* secrets and deploy it from
+# `main` only, the way pages.yml does for the simulator.
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#   STAGING_SSH_HOST       required; without it the deploy is skipped
+#   STAGING_SSH_USER       required
+#   STAGING_SSH_KEY        the private half of a key whose public half is
+#                          added to the SSH user in the WPMU DEV Hub; or
+#   STAGING_SSH_PASSWORD   that user's password. The key wins if both are set.
+#   STAGING_SSH_PORT       optional, default 22
+#   STAGING_WP_PATH        optional; found by looking for wp-config.php if unset
+name: WordPress site
+
+on:
+  push:
+    paths:
+      - 'wordpress/**'
+      - '.github/workflows/wordpress.yml'
+  workflow_dispatch:
+    inputs:
+      starter:
+        description: 'Also add any missing starter content (never overwrites)'
+        type: boolean
+        default: false
+      diagnose:
+        description: 'Also print how caching is set up on the server'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wordpress-staging
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint PHP
+        run: find wordpress -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Validate JSON
+        run: find wordpress -name '*.json' -print0 | xargs -0 -n1 python3 -m json.tool --no-ensure-ascii > /dev/null
+
+      - name: Package
+        run: wordpress/bin/build-zips.sh "$RUNNER_TEMP/zips"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wordpress-zips
+          path: ${{ runner.temp }}/zips/*.zip
+
+  deploy-staging:
+    needs: check
+    runs-on: ubuntu-latest
+    environment: wordpress-staging
+    env:
+      HOST: ${{ secrets.STAGING_SSH_HOST }}
+      USER_NAME: ${{ secrets.STAGING_SSH_USER }}
+      SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+      SSHPASS: ${{ secrets.STAGING_SSH_PASSWORD }}
+      PORT: ${{ secrets.STAGING_SSH_PORT }}
+      WP_PATH: ${{ secrets.STAGING_WP_PATH }}
+      STARTER: ${{ inputs.starter }}
+      DIAGNOSE: ${{ inputs.diagnose }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy
+        run: |
+          if [ -z "$HOST" ] || [ -z "$USER_NAME" ] || { [ -z "$SSH_KEY" ] && [ -z "$SSHPASS" ]; }; then
+            echo "::warning::Staging SSH secrets are not set, so nothing was deployed."
+            exit 0
+          fi
+
+          # A secret pasted from a dashboard often carries a trailing line
+          # break or space, which the server reads as part of the value.
+          #
+          # The Hub also offers a whole "ssh user@host" line to copy, and it is
+          # easy to paste that into either secret. Take the part each needs.
+          tidy() { printf '%s' "$1" | sed -E 's/^[[:space:]]*ssh[[:space:]]+//' | tr -d '[:space:]'; }
+          HOST=$(tidy "$HOST"); HOST=${HOST##*@}
+          USER_NAME=$(tidy "$USER_NAME"); USER_NAME=${USER_NAME%%@*}
+
+          # Secret values are masked in this log, so describe their shape
+          # instead: enough to spot a wrong paste without printing either.
+          echo "Username: ${#USER_NAME} characters. Host: ${#HOST} characters, $(tr -cd . <<<"$HOST" | wc -c) dots."
+
+          if [ -n "$SSH_KEY" ]; then
+            # OpenSSH refuses a key file without its final line break.
+            key="$RUNNER_TEMP/deploy_key"
+            printf '%s\n' "$SSH_KEY" | tr -d '\r' > "$key"
+            chmod 600 "$key"
+            # The fingerprint is public; compare it with the key in the Hub.
+            echo "Key fingerprint: $(ssh-keygen -y -f "$key" | ssh-keygen -lf - | awk '{print $2}')"
+            login=(ssh -i "$key" -o IdentitiesOnly=yes -o BatchMode=yes)
+            how="key"
+          else
+            sudo apt-get install -y -qq sshpass > /dev/null
+            SSHPASS=$(printf '%s' "$SSHPASS" | tr -d '\r\n')
+            export SSHPASS
+            login=(sshpass -e ssh)
+            how="password"
+          fi
+          echo "Logging in to the staging server with a $how."
+
+          # A fresh runner has never seen the host, so its key is accepted on
+          # first contact. Fine for a test site; pin it before production.
+          remote() {
+            "${login[@]}" -p "${PORT:-22}" -o StrictHostKeyChecking=accept-new \
+              -o UserKnownHostsFile="$RUNNER_TEMP/known_hosts" "$USER_NAME@$HOST" "$@" || {
+              rc=$?
+              case $rc in
+                5) echo "::error::The server rejected the password for $USER_NAME. Check STAGING_SSH_PASSWORD against the SSH user in the WPMU DEV Hub, or reset it there." ;;
+                6) echo "::error::The server's host key was refused." ;;
+                255) echo "::error::Could not log in to $HOST on port ${PORT:-22} as $USER_NAME with a $how. With a key, check its public half is added to that user in the WPMU DEV Hub." ;;
+              esac
+              return $rc
+            }
+          }
+
+          # Log in once on its own first. Inside $(…) below, the explanation
+          # of a failed login would be captured instead of shown.
+          remote true || exit 1
+
+          if [ -z "$WP_PATH" ]; then
+            WP_PATH=$(remote 'f=$(find ~ /var/web -maxdepth 4 -name wp-config.php 2>/dev/null | head -1); [ -n "$f" ] && dirname "$f"')
+          fi
+          if [ -z "$WP_PATH" ]; then
+            echo "::error::Could not find wp-config.php on the server. Set STAGING_WP_PATH."
+            exit 1
+          fi
+          echo "WordPress root: $WP_PATH"
+
+          # Unpack beside the live copy and swap, so a half-finished upload is
+          # never what the site is running.
+          ship() {
+            local src_dir="$1" name="$2" dest="$3"
+            tar -C "$src_dir" -czf - "$name" | remote "set -e
+              mkdir -p '$dest'
+              rm -rf '$dest/.$name.new' '$dest/.$name.old'
+              mkdir '$dest/.$name.new'
+              tar -xzf - -C '$dest/.$name.new'
+              [ -d '$dest/$name' ] && mv '$dest/$name' '$dest/.$name.old'
+              mv '$dest/.$name.new/$name' '$dest/$name'
+              rm -rf '$dest/.$name.new' '$dest/.$name.old'"
+            echo "Deployed $name"
+          }
+          ship wordpress/plugin yard-systems "$WP_PATH/wp-content/plugins"
+          ship wordpress/theme working-yard "$WP_PATH/wp-content/themes"
+
+          # First deploy only: switch them on and lay down the starter content.
+          # After that a deploy changes files and nothing else, so a theme or
+          # setting changed in the dashboard is never switched back.
+          remote "cd '$WP_PATH' && set -e
+            admin=\$(wp user list --role=administrator --field=ID | head -1)
+            if ! wp plugin is-active yard-systems; then
+              wp plugin activate yard-systems
+              wp theme activate working-yard
+              wp yard-starter --user=\$admin
+            elif [ '$STARTER' = 'true' ]; then
+              wp yard-starter --user=\$admin
+            fi
+            # Text written into the plugin since the site was set up (answers
+            # to its open questions); it never overwrites an edit.
+            wp yard-update --user=\$admin
+            wp rewrite flush
+            wp cache flush || true
+            # The host's static page cache keeps serving the old pages after a
+            # deploy until it is cleared. WPMU DEV provides its own command for
+            # that; elsewhere, Hummingbird's page cache clears on this action.
+            if wp cli has-command 'hosting clearcache'; then
+              wp hosting clearcache static
+              wp hosting clearcache object || true
+            else
+              wp eval 'do_action( \"wphb_clear_page_cache\" );' || true
+            fi
+            echo \"Page caches cleared. Active plugins: \$(wp plugin list --status=active --field=name | tr '\n' ' ')\""
+
+          if [ "$DIAGNOSE" = "true" ]; then
+            remote "cd '$WP_PATH'
+              echo '--- advanced-cache.php'; head -c 700 wp-content/advanced-cache.php 2>/dev/null; echo
+              echo '--- cache folders'; find wp-content -maxdepth 4 -type d -iname '*cache*' 2>/dev/null | head -20
+              echo '--- cached copies of the home page'; find wp-content -maxdepth 6 -name 'index*.htm*' -path '*cache*' 2>/dev/null | head -10
+              echo '--- hummingbird page cache settings'; wp option get wphb_settings --format=json 2>/dev/null | tr ',' '\n' | grep -iE 'page_cache|cache_|enabled|hosting|server' | head -30
+              echo '--- hummingbird commands'; wp help hummingbird 2>&1 | head -30
+              echo '--- hosting commands'; wp help hosting 2>&1 | sed -n '8,60p'
+              echo '--- hosting cache'; wp help hosting cache 2>&1 | head -40" || true
+          fi

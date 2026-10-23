@@ -1,0 +1,17 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "yard-systems/system-menu",
+	"title": "Systems menu",
+	"category": "widgets",
+	"icon": "grid-view",
+	"description": "Every published system as a card, grouped by category, each with its result in this yard and a button to add it to the visitor's list.",
+	"attributes": {
+		"category": { "type": "string", "default": "" },
+		"limit": { "type": "number", "default": 0 }
+	},
+	"supports": { "html": false, "align": [ "wide", "full" ] },
+	"textdomain": "yard-systems",
+	"editorScript": "yard-systems-editor",
+	"render": "file:./render.php"
+}
