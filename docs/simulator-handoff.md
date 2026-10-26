@@ -29,6 +29,10 @@ carries where it came from.
   batch and one good one each). Alon has since logged more from the app:
   felt hanging pockets and Chapin bucket irrigation are published as *works*,
   and the indoor hydroponic tower is on the site as a draft with no result.
+- **History:** every log entry is dated, and a system keeps all of them,
+  newest first, in the app and on its website page. The Catalog tab opens
+  with the whole yard's log season by season (`logBySeason`), so a year
+  reads as one story.
 - **Site:** a ZIP or "Use my location" sets the sun *and* the weather. Weather
   comes from built-in 2011–2025 NASA POWER averages for every US grid cell
   the ZIP table reaches, or from 15 years of measured ERA5 fetched in-app,
@@ -39,7 +43,7 @@ carries where it came from.
 - **App:** an offline-capable PWA. It is built so Capacitor can wrap it for
   iOS and Android later; the steps are in the README.
 
-Tests: 170, all passing. Pull requests merged: #1 website and status sync
+Tests: 172, all passing. Pull requests merged: #1 website and status sync
 (WordPress chat), #2 README note, #3 yard log (WordPress chat), #4 yard
 results read from the log, and the guard on website ids, #5 these notes, #6
 "labor" spelling on the website (WordPress chat).
@@ -108,5 +112,9 @@ this environment can reach" in `CLAUDE.md`.
 
 - Finer offline weather in the mountain West, where a 0.5° cell blurs valley
   and ridge. Anchorage's rain comes out about double the city's.
-- Record dates for the yard's results, so the log shows a season-by-season
-  history and not just the latest result.
+- Split the seeded results that tell more than one attempt. Nettle ferment
+  and banana peel tea are each one *partly worked* entry for a batch that
+  moulded and one that worked; as two entries they would read *did not
+  work*, then *works*, and their badges would change. Aquaponics and the
+  Aerobin fold a rough start in the same way. Alon's record, so his call,
+  and it needs the dates of each batch.

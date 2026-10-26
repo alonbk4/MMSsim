@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultDesign } from './defaults';
 import {
-  applyLog, entriesFromOverrides, formatLogDate, logSignature, mergeLogs, parseEntry,
+  applyLog, entriesFromOverrides, formatLogDate, logBySeason, logSignature, mergeLogs, parseEntry,
   resultsFromLog, SEED_LOG, type LogEntry,
 } from './yardLog';
 
@@ -84,6 +84,30 @@ describe('the yard log', () => {
     expect(formatLogDate('2026-08-14')).toBe('August 14, 2026');
     expect(formatLogDate('2026-08')).toBe('August 2026');
     expect(formatLogDate('')).toBe('Undated');
+  });
+
+  it('reads season by season, newest first, with a winter spanning the new year', () => {
+    const log = [
+      entry({ id: 'a', system: 'x', date: '2026-08' }),
+      entry({ id: 'b', system: 'y', date: '2026-06-03' }),
+      entry({ id: 'c', system: 'x', date: '2026-10-21' }),
+      entry({ id: 'd', system: 'z', date: '2026-12-02' }),
+      entry({ id: 'e', system: 'z', date: '2027-02-20' }),
+      entry({ id: 'f', system: 'y', date: '' }),
+      entry({ id: 'g', system: 'y', date: '2026-07-01', deleted: true }),
+    ];
+    const seasons = logBySeason(log);
+    expect(seasons.map((s) => s.label)).toEqual(['Winter 2026–27', 'Fall 2026', 'Summer 2026', 'Undated']);
+    expect(seasons.map((s) => s.entries.map((e) => e.id))).toEqual([['e', 'd'], ['c'], ['a', 'b'], ['f']]);
+    expect(seasons.map((s) => s.season)).toEqual(['winter', 'fall', 'summer', null]);
+  });
+
+  it('names the seasons the other way round south of the equator', () => {
+    const log = [
+      entry({ id: 'a', system: 'x', date: '2026-07-10' }),
+      entry({ id: 'b', system: 'x', date: '2026-12-25' }),
+    ];
+    expect(logBySeason(log, true).map((s) => s.label)).toEqual(['Summer 2026–27', 'Winter 2026']);
   });
 
   it('changes its signature when any entry changes', () => {
