@@ -414,7 +414,7 @@ return array(
 			),
 			'content'  =>
 				$p( $you( 'Is this in your yard? Set the tier, then publish.' ) )
-				. $p( 'Three feet of height is enough to run two lines of drip tape over about 250 square feet, using about a third less water than a hose. The cost is your legs: someone carries and fills that bucket. Put a rain tank uphill and that labour disappears.' ),
+				. $p( 'Three feet of height is enough to run two lines of drip tape over about 250 square feet, using about a third less water than a hose. The cost is your legs: someone carries and fills that bucket. Put a rain tank uphill and that labor disappears.' ),
 		),
 
 		array(
