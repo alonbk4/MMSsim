@@ -1,7 +1,8 @@
-# Simulator handoff — 23 October 2026
+# Simulator handoff — 26 October 2026
 
-Written by the first simulator chat for the next one. It is dated on purpose:
-treat it as a snapshot, and check the repo when they disagree.
+Written by the first simulator chat on 23 October, and brought up to date by
+the second. It is dated on purpose: treat it as a snapshot, and check the repo
+when they disagree.
 
 ## What it is for
 
@@ -25,7 +26,9 @@ carries where it came from.
   the yard log, which syncs through the website, so every device sees one
   record. Seeded results: Aerobin, biochar kiln and tote, and aquaponics
   *works*; nettle ferment and banana peel tea *partly worked* (one moulded
-  batch and one good one each). Alon has since logged more from the app.
+  batch and one good one each). Alon has since logged more from the app:
+  felt hanging pockets and Chapin bucket irrigation are published as *works*,
+  and the indoor hydroponic tower is on the site as a draft with no result.
 - **Site:** a ZIP or "Use my location" sets the sun *and* the weather. Weather
   comes from built-in 2011–2025 NASA POWER averages for every US grid cell
   the ZIP table reaches, or from 15 years of measured ERA5 fetched in-app,
@@ -38,16 +41,23 @@ carries where it came from.
 
 Tests: 170, all passing. Pull requests merged: #1 website and status sync
 (WordPress chat), #2 README note, #3 yard log (WordPress chat), #4 yard
-results read from the log, and the guard on website ids.
+results read from the log, and the guard on website ids, #5 these notes, #6
+"labor" spelling on the website (WordPress chat).
+
+## Being tested
+
+- **Photos, end to end.** No photo has yet gone to the real host, or come
+  from a real phone camera. Alon is testing it. If you change the photo path
+  (`src/state/photos.ts`, or the `/photo` upload in `websiteSync.ts`), tell
+  the WordPress chat so it can recheck the server side.
 
 ## Parked by Alon, not forgotten
 
-- **An allowlist for the weather archive.** The environment's network policy
-  blocks Open-Meteo. Alon's admin would have to allow
-  `archive-api.open-meteo.com`; a request was drafted. In-app fetches from a
-  phone or browser already work, since only this sandbox is blocked.
 - **iOS and Android apps.** Capacitor, Apple's $99 a year and Google's one-off
   $25. Not started.
+
+The weather archive allowlist that used to be parked here is moot: see "What
+this environment can reach" in `CLAUDE.md`.
 
 ## How Alon likes to work
 
@@ -55,15 +65,18 @@ results read from the log, and the guard on website ids.
 - Ask before anything outward-facing: merging, posting, deleting, other
   sessions. He usually merges pull requests himself, or says "merge".
 - He prefers illustrated, friendly graphics to technical ones.
-- **When a reply has anything meant for the WordPress chat, end it with:**
+- **Message the WordPress chat directly, and tell Alon you did.** It is
+  titled "Yard sustainability WordPress site". Use `send_message` from the
+  Claude Code Remote MCP server, addressed by session ID; find the ID with
+  `list_sessions`. Short names from `ListAgents` don't resolve, since it sees
+  only sessions on the same machine. Only a chat without `send_message`
+  falls back to ending its reply with:
   > 📌 **Ping the WordPress chat:** paste "The simulator chat replied to your
   > message. Read its latest message in its transcript."
-
-  He asked for this every time. It is needed only while the simulator chat
-  cannot message the WordPress chat itself: if this chat has a tool that
-  sends to another session, use that instead, and say so. The WordPress chat
-  is titled "Yard sustainability WordPress site", and it can message this
-  chat directly.
+- **One simulator chat at a time.** The current one is "Simulator status and
+  chat messaging". "Yard systems simulator (2)" is archived. The first,
+  "Yard systems simulator app", stays open for questions only: don't give it
+  work, or two branches will edit the same files.
 
 ## Learned the hard way
 
