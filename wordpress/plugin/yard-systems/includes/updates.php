@@ -89,6 +89,23 @@ function yard_systems_content_updates() {
 				array( 'yard_system', 'bucket-drip', 'Put a rain tank uphill and that labour disappears.', 'Put a rain tank uphill and that labor disappears.' ),
 			),
 		),
+
+		// WordPress's sample post, to the bin (where it can be restored for 30
+		// days), and only while it still says what WordPress put in it.
+		7 => array(
+			'text'  => array(),
+			'trash' => array(
+				array( 'post', 'hello-world', 'Welcome to WordPress. This is your first post.' ),
+			),
+		),
+
+		// And its sample page, the same way.
+		8 => array(
+			'text'  => array(),
+			'trash' => array(
+				array( 'page', 'sample-page', 'This is an example page.' ),
+			),
+		),
 	);
 }
 
@@ -123,6 +140,17 @@ function yard_systems_run_content_updates() {
 				)
 			);
 			$log[] = "updated {$type} {$slug}";
+		}
+
+		foreach ( $batch['trash'] ?? array() as list( $type, $slug, $still ) ) {
+			$post = get_page_by_path( $slug, OBJECT, $type );
+			if ( ! $post ) {
+				$log[] = "skipped {$type} {$slug}: not on this site";
+			} elseif ( false === strpos( $post->post_content, $still ) ) {
+				$log[] = "skipped {$type} {$slug}: edited, so kept";
+			} elseif ( wp_trash_post( $post->ID ) ) {
+				$log[] = "moved {$type} {$slug} to the bin";
+			}
 		}
 
 		// Systems added to the starter content since, unless already here
