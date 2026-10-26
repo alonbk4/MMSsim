@@ -1,19 +1,66 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createDefaultDesign } from '../engine/defaults';
-import { SEED_LOG } from '../engine/yardLog';
+import { ANN_ARBOR_LOG } from '../engine/yardLog';
 import { useApp } from './store';
 import { startYardLog, useYardLog } from './yardLog';
 
 const tier = (id: string) => useApp.getState().design.overrides[id]?.evidence;
 
-describe('the yard log on a device', () => {
+describe('a new person’s device', () => {
   beforeEach(() => {
     useApp.setState({ design: createDefaultDesign() });
-    useYardLog.setState({ entries: SEED_LOG, pending: [], carried: false });
+    useYardLog.setState({ entries: [], pending: [], carried: false });
   });
 
-  it('carries in results set before the log, and they outrank the seeded record', () => {
+  it('starts with an empty log and none of the Ann Arbor yard’s results', () => {
+    const stop = startYardLog();
+    expect(useYardLog.getState().entries).toEqual([]);
+    for (const e of ANN_ARBOR_LOG) expect(tier(e.system)).toBeUndefined();
+    stop();
+  });
+
+  it('drops the Ann Arbor tiers an older starting design gave it, without logging them as its own', () => {
+    const design = createDefaultDesign();
+    design.overrides.aerobin = { evidence: 'testedSuccess', yieldFactor: 1.2 };
+    design.overrides['nettle-patch'] = { evidence: 'testedPartial' };
+    design.overrides['rain-garden'] = { evidence: 'testedPartial' }; // set by the person
+    useApp.setState({ design });
+
+    const stop = startYardLog();
+    expect(tier('aerobin')).toBeUndefined();
+    expect(useApp.getState().design.overrides.aerobin.yieldFactor).toBe(1.2);
+    expect(tier('nettle-patch')).toBeUndefined();
+    expect(tier('rain-garden')).toBe('testedPartial');
+    expect(useYardLog.getState().entries.map((e) => e.system)).toEqual(['rain-garden']);
+    stop();
+  });
+
+  it('is not given the record when the stored log is read back', async () => {
+    localStorage.setItem('mmssim.yardlog.v1', JSON.stringify({
+      state: { entries: [], pending: [], carried: true }, version: 0,
+    }));
+    await useYardLog.persist.rehydrate();
+    expect(useYardLog.getState().entries).toEqual([]);
+  });
+});
+
+describe('a device of the Ann Arbor yard’s', () => {
+  beforeEach(() => {
+    useApp.setState({ design: createDefaultDesign() });
+    useYardLog.setState({ entries: ANN_ARBOR_LOG, pending: [], carried: false });
+  });
+
+  it('keeps the record it already holds when the stored log is read back', async () => {
+    localStorage.setItem('mmssim.yardlog.v1', JSON.stringify({
+      state: { entries: ANN_ARBOR_LOG, pending: [], carried: true }, version: 0,
+    }));
+    await useYardLog.persist.rehydrate();
+    expect(useYardLog.getState().entries.map((e) => e.id).sort())
+      .toEqual(ANN_ARBOR_LOG.map((e) => e.id).sort());
+  });
+
+  it('carries in results set before the log, and they outrank the Ann Arbor record', () => {
     const design = createDefaultDesign();
     design.overrides.aerobin = { evidence: 'testedFailed' };
     design.overrides['rain-garden'] = { evidence: 'testedPartial' };

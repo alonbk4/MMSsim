@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultDesign } from './defaults';
 import {
-  applyLog, entriesFromOverrides, formatLogDate, logBySeason, logSignature, mergeLogs, parseEntry,
-  resultsFromLog, SEED_LOG, type LogEntry,
+  ANN_ARBOR_LOG, applyLog, entriesFromOverrides, formatLogDate, logBySeason, logSignature, mergeLogs,
+  parseEntry, resultsFromLog, withoutStarterTiers, type LogEntry,
 } from './yardLog';
 
 const entry = (over: Partial<LogEntry> & Pick<LogEntry, 'id' | 'system'>): LogEntry => ({
@@ -11,9 +11,25 @@ const entry = (over: Partial<LogEntry> & Pick<LogEntry, 'id' | 'system'>): LogEn
 });
 
 describe('the yard log', () => {
-  it('starts out agreeing with the yard results the starting design carries', () => {
+  it('starts a new device with no tested tiers, and an empty log keeps it that way', () => {
     const design = createDefaultDesign();
-    expect(applyLog(design.overrides, SEED_LOG)).toBe(design.overrides);
+    expect(applyLog(design.overrides, [])).toBe(design.overrides);
+  });
+
+  it('drops the Ann Arbor tiers the starting design used to carry, and nothing else', () => {
+    const overrides = {
+      aerobin: { evidence: 'testedSuccess' as const },
+      'nettle-patch': { evidence: 'testedPartial' as const, yieldFactor: 0.8 },
+      'biochar-kiln': { evidence: 'testedFailed' as const }, // not what Ann Arbor found
+      'rain-garden': { evidence: 'testedSuccess' as const }, // never in its record
+    };
+    expect(withoutStarterTiers(overrides)).toEqual({
+      'nettle-patch': { yieldFactor: 0.8 },
+      'biochar-kiln': { evidence: 'testedFailed' },
+      'rain-garden': { evidence: 'testedSuccess' },
+    });
+    const none = { 'rain-garden': { evidence: 'testedSuccess' as const } };
+    expect(withoutStarterTiers(none)).toBe(none);
   });
 
   it('takes each system’s tier from its latest result, not its latest entry', () => {
@@ -60,9 +76,9 @@ describe('the yard log', () => {
   });
 
   it('lets a deletion anywhere win over the seeded record', () => {
-    const gone = { ...SEED_LOG[0], deleted: true, updated: 5 };
-    expect(mergeLogs(SEED_LOG, [gone]).find((e) => e.id === gone.id)?.deleted).toBe(true);
-    expect(mergeLogs([gone], SEED_LOG).find((e) => e.id === gone.id)?.deleted).toBe(true);
+    const gone = { ...ANN_ARBOR_LOG[0], deleted: true, updated: 5 };
+    expect(mergeLogs(ANN_ARBOR_LOG, [gone]).find((e) => e.id === gone.id)?.deleted).toBe(true);
+    expect(mergeLogs([gone], ANN_ARBOR_LOG).find((e) => e.id === gone.id)?.deleted).toBe(true);
   });
 
   it('carries over results set before the log, once, the same way on every device', () => {
@@ -71,13 +87,13 @@ describe('the yard log', () => {
       'rain-garden': { evidence: 'testedFailed' as const },
       'first-flush': { evidence: 'researched' as const },
     };
-    const a = entriesFromOverrides(overrides, SEED_LOG, 1000, '2026-10-23');
-    const b = entriesFromOverrides(overrides, SEED_LOG, 2000, '2026-10-24');
+    const a = entriesFromOverrides(overrides, ANN_ARBOR_LOG, 1000, '2026-10-23');
+    const b = entriesFromOverrides(overrides, ANN_ARBOR_LOG, 2000, '2026-10-24');
     expect(a.map((e) => e.system)).toEqual(['rain-garden']);
     expect(a[0]).toMatchObject({ result: 'testedFailed', private: true, date: '2026-10-23' });
     expect(a[0].id).toBe(b[0].id);
     // Once carried over, there is nothing left to carry.
-    expect(entriesFromOverrides(overrides, [...SEED_LOG, ...a], 3000, '2026-10-25')).toEqual([]);
+    expect(entriesFromOverrides(overrides, [...ANN_ARBOR_LOG, ...a], 3000, '2026-10-25')).toEqual([]);
   });
 
   it('says dates the way they were recorded', () => {

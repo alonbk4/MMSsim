@@ -41,13 +41,12 @@ Nothing in the catalog ships in a tested tier — those mean *you* built it,
 which no catalog entry can claim for you. A tested tier comes only from the
 yard log (Catalog → a system → Yard log): dated entries, each with a result,
 a note and maybe a photo, and a system's tier is its latest result. The log
-starts with this yard's own record (`SEED_LOG` in `src/engine/yardLog.ts`):
-the Aerobin, the biochar (made, then charged in a tote) and the aquaponics
-system *Tested — works*; the nettle ferment and the banana peel tea, one
-moulded batch and one good one each, *Tested — partly worked*.
-`YARD_RESULTS` in `src/engine/defaults.ts` mirrors those onto the starting
-design for code that runs without the app, and is read from the log so the
-two cannot drift. So the app tells you not just "this design covers 88% of your
+starts empty on every new device: what one yard found is not your result.
+For a system you have not logged, the app shows what the Ann Arbor yard this
+was built for found (`ANN_ARBOR_LOG` in `src/engine/yardLog.ts`), set apart
+as evidence: the Aerobin, the biochar (made, then charged in a tote) and the
+aquaponics system worked there; the nettle ferment and the banana peel tea,
+one moulded batch and one good one each, partly worked. So the app tells you not just "this design covers 88% of your
 irrigation" but "…and only 58% if the researched and unproven parts come in at
 the bottom of their range." As you build things here, record what happened; the
 bands narrow and the answers stop being a literature review.
