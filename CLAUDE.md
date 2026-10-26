@@ -77,6 +77,10 @@ already (HTTP 429). Bundled weather data is still built in GitHub Actions, so
 that it is reproducible: the "Build offline weather averages" workflow
 (`missing` mode fills gaps after a rate-limited run).
 
+The WordPress staging site is reachable over HTTPS, so its pages and REST
+routes can be checked directly. SSH is not: the proxy carries only HTTPS, so
+`wordpress.yml` in GitHub Actions does every deploy and every WP-CLI command.
+
 ## The repo is public
 
 No keys, passwords, tokens or personal contact details in commits, pull
