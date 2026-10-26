@@ -67,13 +67,15 @@ saved design.
   averages all work with no network. Don't add a step that needs one where
   the user would be standing in the yard.
 
-## What this environment can't reach
+## What this environment can reach
 
-Cloud sessions can't reach Open-Meteo, NASA POWER or `*.github.io`. Data
-that needs them is fetched in GitHub Actions: the "Build offline weather
-averages" workflow (`missing` mode fills gaps after a rate-limited run). The
-live site can't be opened from here, so a deploy is confirmed by its workflow
-run, not by loading the page.
+Checked on 26 October 2026: cloud sessions now reach NASA POWER and
+`*.github.io`, so a deploy can be confirmed by loading the live page as well
+as by its workflow run. Open-Meteo answers too, but the sandbox shares its
+outgoing address with other users, and the free daily limit is often spent
+already (HTTP 429). Bundled weather data is still built in GitHub Actions, so
+that it is reproducible: the "Build offline weather averages" workflow
+(`missing` mode fills gaps after a rate-limited run).
 
 ## The repo is public
 
