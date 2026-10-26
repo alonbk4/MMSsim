@@ -2,29 +2,8 @@ import { CLIMATE_PRESETS, DEFAULT_SITE } from './climate';
 import { isEvidenceTier } from './resources';
 import { ANN_ARBOR } from './data/observed/ann-arbor';
 import type { Design, Placement, SiteProfile, SystemOverride } from './types';
-import { resultsFromLog, SEED_LOG, type LogResult } from './yardLog';
 
 export const DESIGN_VERSION = 5;
-
-/**
- * The yard's own results, as the starting design carries them.
- *
- * The catalog never ships a tested tier — that would be claiming someone
- * else's result. What was actually tried here lives in the yard log
- * (`SEED_LOG` in yardLog.ts, plus whatever is recorded in the app), and at
- * runtime the log sets every tested tier itself. This only mirrors the
- * seeded results onto the default design, so code that runs the engine
- * without the app — tests, the website sync — sees the same yard. It is read
- * from the log rather than written out again, so the two can never disagree.
- */
-export const YARD_RESULTS: Record<string, SystemOverride> = Object.fromEntries(
-  Object.entries(resultsFromLog(SEED_LOG))
-    .filter((e): e is [string, LogResult] => e[1] !== null)
-    .map(([id, evidence]) => [id, { evidence }]),
-);
-
-const yardResults = (): Design['overrides'] =>
-  Object.fromEntries(Object.entries(YARD_RESULTS).map(([id, ov]) => [id, { ...ov }]));
 
 let seq = 0;
 export function newId(prefix = 'p'): string {
@@ -64,7 +43,9 @@ export function createDefaultDesign(): Design {
       },
     ],
     zones: [],
-    overrides: yardResults(),
+    // No tested tiers: those come from the person's own yard log. Starting
+    // anyone with another yard's results would be claiming them for them.
+    overrides: {},
     customSystems: [],
     climates: [{ id: 'c_ann_arbor', name: 'Ann Arbor, MI', ...ANN_ARBOR }],
   };

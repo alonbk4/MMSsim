@@ -2,13 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { CATALOG } from './catalog';
 import { createDefaultDesign } from './defaults';
 import { endpointFor, statusesFor, statusSignature, syncWithSite, SyncError, uploadPhoto } from './websiteSync';
-import { SEED_LOG } from './yardLog';
+import { ANN_ARBOR_LOG, applyLog } from './yardLog';
 
 describe('statuses sent to the website', () => {
   it('reports what the design shows, overrides included', () => {
     const design = createDefaultDesign();
+    // On the yard's own device its log sets the tested tiers.
+    design.overrides = applyLog(design.overrides, ANN_ARBOR_LOG);
     const statuses = statusesFor(design);
-    // The yard's own results ride on the starter design.
     expect(statuses.aerobin).toBe('testedSuccess');
     expect(statuses['nettle-patch']).toBe('testedPartial');
     // Untouched systems go as the catalog has them.
@@ -61,17 +62,17 @@ describe('sending', () => {
       site: 'makeMIsustainable',
       changed: [{ title: 'Worm tea', change: 'Researched → Works here, published' }],
       saved: 6,
-      entries: [...SEED_LOG, { id: 'junk' }],
+      entries: [...ANN_ARBOR_LOG, { id: 'junk' }],
     });
-    const out = await syncWithSite('example.com', ' k3y ', { aerobin: 'testedSuccess' }, SEED_LOG, fetchImpl);
+    const out = await syncWithSite('example.com', ' k3y ', { aerobin: 'testedSuccess' }, ANN_ARBOR_LOG, fetchImpl);
     expect(out.site).toBe('makeMIsustainable');
     expect(out.changed).toEqual([{ title: 'Worm tea', change: 'Researched → Works here, published' }]);
     expect(out.saved).toBe(6);
     // What is not an entry is dropped, not kept.
-    expect(out.entries).toEqual(SEED_LOG);
+    expect(out.entries).toEqual(ANN_ARBOR_LOG);
     const [url, init] = fetchImpl.mock.calls[0];
     expect(url).toBe('https://example.com/wp-json/yard-systems/v1/sync');
-    expect(JSON.parse(init.body)).toEqual({ key: 'k3y', statuses: { aerobin: 'testedSuccess' }, entries: SEED_LOG });
+    expect(JSON.parse(init.body)).toEqual({ key: 'k3y', statuses: { aerobin: 'testedSuccess' }, entries: ANN_ARBOR_LOG });
   });
 
   it('sends a photo as a form, and reads back where it went', async () => {

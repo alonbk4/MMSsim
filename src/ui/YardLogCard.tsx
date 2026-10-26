@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  formatLogDate, liveEntries, localDate, logBySeason, type LogEntry, type LogResult, type Season,
+  ANN_ARBOR_LOG, formatLogDate, liveEntries, localDate, logBySeason,
+  type LogEntry, type LogResult, type Season,
 } from '../engine/yardLog';
 import { keptPhoto, preparePhoto } from '../state/photos';
 import { systemById, useApp } from '../state/store';
@@ -118,10 +119,13 @@ export function YardLogCard({ system }: { system: string }) {
       ) : (
         <div className="stack">
           {entries.length === 0 ? (
-            <p className="card-note">
-              Nothing recorded yet. Once you have tried it here, record what happened,
-              and especially when it didn't work.
-            </p>
+            <>
+              <p className="card-note">
+                Nothing recorded yet. Once you have tried it here, record what happened,
+                and especially when it didn't work.
+              </p>
+              <OtherYard system={system} />
+            </>
           ) : (
             <ol className="log-list">
               {entries.map((e) => (
@@ -148,6 +152,33 @@ export function YardLogCard({ system }: { system: string }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * What the Ann Arbor yard found, for a system this device has no entries
+ * for: evidence from one real yard, set apart from the person's own log and
+ * never their tier.
+ */
+function OtherYard({ system }: { system: string }) {
+  const found = liveEntries(ANN_ARBOR_LOG, system).reverse();
+  if (!found.length) return null;
+  return (
+    <div className="stack" style={{ gap: 8 }}>
+      <span className="meta-line">
+        One yard in Ann Arbor, Michigan, has tried this. What it found is evidence, not your result:
+      </span>
+      <ol className="log-list">
+        {found.map((e) => (
+          <li key={e.id} className="log-entry">
+            <span className="log-date">
+              {CHOICES.find((c) => c.value === e.result)?.label} there · {formatLogDate(e.date)}
+            </span>
+            {e.note && <p className="log-note">{e.note}</p>}
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

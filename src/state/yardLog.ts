@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { newId } from '../engine/defaults';
 import {
-  applyLog, entriesFromOverrides, localDate, mergeLogs, parseEntry, SEED_LOG,
+  applyLog, entriesFromOverrides, localDate, mergeLogs, parseEntry, withoutStarterTiers,
   type LogEntry, type LogPhoto, type LogResult,
 } from '../engine/yardLog';
 import { forgetPhoto, keepPhoto } from './photos';
@@ -11,8 +11,9 @@ import { useApp } from './store';
 /**
  * This device's copy of the yard log.
  *
- * It works with no website at all. With one connected (Site tab → Website),
- * the website's copy is merged in on every sync, so each device ends up with
+ * It starts empty: whoever uses the app records their own yard. It works
+ * with no website at all. With one connected (Site tab → Website), the
+ * website's copy is merged in on every sync, so each device ends up with
  * every entry made on any of them.
  */
 
@@ -54,7 +55,7 @@ const entryId = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto
 export const useYardLog = create<YardLogState>()(
   persist(
     (set, get) => ({
-      entries: SEED_LOG,
+      entries: [],
       pending: [],
       carried: false,
 
@@ -117,10 +118,8 @@ export const useYardLog = create<YardLogState>()(
       name: 'mmssim.yardlog.v1',
       partialize: ({ entries, pending, carried }) => ({ entries, pending, carried }),
       /**
-       * The seeded record is merged in on every load, so a device that opened
-       * the app before an entry was added to it still gets it, and an entry
-       * deleted here stays deleted. Stored entries are checked one by one: a
-       * bad one is dropped, not allowed to break the rest.
+       * Stored entries are checked one by one: a bad one is dropped, not
+       * allowed to break the rest.
        */
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<YardLogState>;
@@ -129,7 +128,7 @@ export const useYardLog = create<YardLogState>()(
           : [];
         return {
           ...current,
-          entries: mergeLogs(SEED_LOG, stored),
+          entries: stored,
           pending: Array.isArray(p.pending) ? p.pending.filter((x) => typeof x === 'string') : [],
           carried: p.carried === true,
         };
@@ -148,8 +147,13 @@ export const useYardLog = create<YardLogState>()(
 export function startYardLog(): () => void {
   const log = useYardLog.getState();
   if (!log.carried) {
+    // Tiers the starting design gave every device from the Ann Arbor yard
+    // are not this device's results, so they go rather than joining its log.
+    const { design } = useApp.getState();
+    const overrides = withoutStarterTiers(design.overrides);
+    if (overrides !== design.overrides) useApp.setState({ design: { ...design, overrides } });
     const now = Date.now();
-    const carried = entriesFromOverrides(useApp.getState().design.overrides, log.entries, now, localDate());
+    const carried = entriesFromOverrides(overrides, log.entries, now, localDate());
     useYardLog.setState({ entries: mergeLogs(log.entries, carried), carried: true });
   }
 

@@ -50,15 +50,16 @@ export interface LogEntry {
 }
 
 /**
- * What the yard had recorded before there was a log, so the record starts
- * with the results it already had, dated as closely as they were reported.
+ * The Ann Arbor yard's results from before there was a log, dated as closely
+ * as they were reported.
  *
- * `updated` is 1 so that any edit or deletion, on any device, wins over these.
- * A device keeps the copy it already has on a tie, so correcting a seed means
- * raising its `updated` (2, then 3…), or devices that have it never see the
- * correction.
+ * They are evidence from one real yard, never anyone's own result: a new
+ * device starts with an empty log, and a system with no entries of its own
+ * shows these as what that yard found. The yard's own devices hold them in
+ * their log, as does the yard's website, which hands them to any device of
+ * the yard's that connects. The ids are the ones the website already has.
  */
-export const SEED_LOG: LogEntry[] = [
+export const ANN_ARBOR_LOG: LogEntry[] = [
   seed('aerobin', '2026-08', 'testedSuccess',
     'Loaded in mid-August with shredded leaves, cardboard cores, food-recycler output and diluted urine. It reached 130 °F within five days and held there about a week, then settled at 120 °F. A day after reloading it was back up to 125 °F.'),
   seed('biochar-kiln', '2026-08', 'testedSuccess',
@@ -152,6 +153,28 @@ export function applyLog(
       if (Object.keys(rest).length) edit()[id] = rest;
       else delete edit()[id];
     }
+  }
+  return out;
+}
+
+/**
+ * The overrides without the tiers the starting design carried from the Ann
+ * Arbor yard between 21 and 26 October 2026. Those were never the person's
+ * own results, so a device that has never had a log drops them rather than
+ * carrying them into one. The yard's own devices get them back from its
+ * website. Same object back when there is nothing to drop.
+ */
+export function withoutStarterTiers(
+  overrides: Record<string, SystemOverride>,
+): Record<string, SystemOverride> {
+  const record = resultsFromLog(ANN_ARBOR_LOG);
+  let out = overrides;
+  for (const [id, ov] of Object.entries(overrides)) {
+    if (!ov?.evidence || record[id] !== ov.evidence) continue;
+    if (out === overrides) out = { ...overrides };
+    const { evidence: _drop, ...rest } = ov;
+    if (Object.keys(rest).length) out[id] = rest;
+    else delete out[id];
   }
   return out;
 }
