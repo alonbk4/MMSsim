@@ -205,6 +205,55 @@ export function formatLogDate(date: string): string {
   return d ? `${MONTHS[m - 1]} ${d}, ${y}` : `${MONTHS[m - 1]} ${y}`;
 }
 
+export interface LogSeason {
+  /** Orders seasons: higher is later. Undated entries come last, as -1. */
+  key: number;
+  /** "Summer 2026", "Winter 2026–27", or "Undated". */
+  label: string;
+  season: Season | null;
+  /** Newest first. */
+  entries: LogEntry[];
+}
+
+export type Season = 'winter' | 'spring' | 'summer' | 'fall';
+
+const SEASONS_NORTH: Season[] = ['winter', 'spring', 'summer', 'fall'];
+const SEASONS_SOUTH: Season[] = ['summer', 'fall', 'winter', 'spring'];
+const SEASON_NAME: Record<Season, string> = {
+  winter: 'Winter', spring: 'Spring', summer: 'Summer', fall: 'Fall',
+};
+
+/**
+ * The whole yard's log, season by season, newest first, so a year's work
+ * reads as one story rather than one system at a time. Seasons are the
+ * weather's, three months each with December opening the next year's first:
+ * a winter spans the new year and is named for both. South of the equator
+ * the names swap round.
+ */
+export function logBySeason(log: LogEntry[], southern = false): LogSeason[] {
+  const names = southern ? SEASONS_SOUTH : SEASONS_NORTH;
+  const seasons = new Map<number, LogSeason>();
+  for (const e of liveEntries(log).reverse()) {
+    let key = -1;
+    let label = 'Undated';
+    let name: Season | null = null;
+    if (isLogDate(e.date) && e.date) {
+      const [y, m] = e.date.split('-').map(Number);
+      const year = m === 12 ? y + 1 : y;
+      const q = Math.floor((m % 12) / 3);
+      key = year * 4 + q;
+      name = names[q];
+      label = q === 0
+        ? `${SEASON_NAME[name]} ${year - 1}–${String(year).slice(-2)}`
+        : `${SEASON_NAME[name]} ${year}`;
+    }
+    const season = seasons.get(key) ?? { key, label, season: name, entries: [] };
+    season.entries.push(e);
+    seasons.set(key, season);
+  }
+  return [...seasons.values()].sort((a, b) => b.key - a.key);
+}
+
 /** Anything that must reach the website: changes it has not acknowledged. */
 export function logSignature(log: LogEntry[]): string {
   return log.map((e) => `${e.id}:${e.updated}`).sort().join('|');

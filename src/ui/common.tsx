@@ -63,6 +63,9 @@ const paths: Record<string, ReactNode> = {
   info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></>,
   trash: <><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" /></>,
   check: <><path d="M4 12.5 9.5 18 20 6" /></>,
+  sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" /></>,
+  snow: <><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9" /><path d="M9.8 4.3 12 6l2.2-1.7M9.8 19.7 12 18l2.2 1.7" /></>,
+  leaf: <><path d="M5 19C5 11 10 5.5 20 4c-1 10-6.5 15-15 15z" /><path d="M5 19l8-8" /></>,
 };
 
 export function Icon({ name, size = 18 }: { name: keyof typeof paths | string; size?: number }) {

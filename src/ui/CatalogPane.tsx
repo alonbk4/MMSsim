@@ -11,7 +11,7 @@ import {
   CATEGORY_ICON, CATEGORY_LABEL, compact, EvidenceBadge, Field, Icon, lower, money,
 } from './common';
 import { trimNum } from './YardCanvas';
-import { YardLogCard } from './YardLogCard';
+import { YardLogCard, YardTimelineCard } from './YardLogCard';
 
 const CATEGORIES: SystemCategory[] = ['water', 'food', 'energy', 'sanitation', 'soil', 'shelter'];
 
@@ -62,6 +62,8 @@ export function CatalogPane() {
             ))}
           </div>
         </div>
+
+        <YardTimelineCard />
 
         <input
           type="text" placeholder="Search systems…"

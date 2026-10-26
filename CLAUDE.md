@@ -32,7 +32,8 @@ npm run dev       # local dev server
 
 Run the tests and the build before every push. For anything visible, also
 drive the built app in Chromium: Playwright is not a project dependency, but
-the browser is at `/opt/pw-browsers/chromium-*/chrome-linux/chrome`. Install
+the browser is at `/opt/pw-browsers/chromium` (a link to the versioned
+build, whose folder name changes). Install
 `playwright-core` in a scratch folder, and use a fresh profile *and* an old
 saved design.
 
