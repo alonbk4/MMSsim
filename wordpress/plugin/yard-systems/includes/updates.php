@@ -98,6 +98,14 @@ function yard_systems_content_updates() {
 				array( 'post', 'hello-world', 'Welcome to WordPress. This is your first post.' ),
 			),
 		),
+
+		// And its sample page, the same way.
+		8 => array(
+			'text'  => array(),
+			'trash' => array(
+				array( 'page', 'sample-page', 'This is an example page.' ),
+			),
+		),
 	);
 }
 
