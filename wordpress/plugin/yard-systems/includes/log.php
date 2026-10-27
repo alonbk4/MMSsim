@@ -356,3 +356,44 @@ function yard_systems_log_cover( $post_id ) {
 	}
 	return 0;
 }
+
+/**
+ * The whole log as a file to keep: every entry, private and deleted ones
+ * included, in the shape the simulator reads, with photos as their
+ * addresses. The photos themselves are in the media library, and in a full
+ * backup of the site.
+ */
+function yard_systems_log_export() {
+	return array(
+		'format'   => 'yard-systems-log',
+		'version'  => 1,
+		'site'     => get_bloginfo( 'name' ),
+		'url'      => home_url( '/' ),
+		'exported' => gmdate( 'c' ),
+		'entries'  => yard_systems_log_for_devices(),
+	);
+}
+
+/**
+ * A file from yard_systems_log_export() back in, merged the way a device's
+ * copy is: an entry changes only where the file's copy changed later than
+ * the site's, so a site that is already up to date is left as it is. Then
+ * the systems' tiers are set from the log again, as a sync would.
+ *
+ * @return array|WP_Error Counts of what the file held and what it changed.
+ */
+function yard_systems_log_import( $data ) {
+	if ( ! is_array( $data ) || 'yard-systems-log' !== ( $data['format'] ?? '' ) || ! isset( $data['entries'] ) || ! is_array( $data['entries'] ) ) {
+		return new WP_Error( 'ys_not_log', __( 'That isn’t a yard log file.', 'yard-systems' ) );
+	}
+	list( $saved, $public ) = yard_systems_merge_log( $data['entries'] );
+	list( $changed )        = yard_systems_apply_statuses( array(), false );
+	if ( $changed || $public ) {
+		yard_systems_clear_page_caches();
+	}
+	return array(
+		'saved'   => $saved,
+		'total'   => count( $data['entries'] ),
+		'changed' => count( $changed ),
+	);
+}

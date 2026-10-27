@@ -114,6 +114,44 @@ function yard_systems_settings_page() {
 			?>
 			<?php esc_html_e( 'It is written in the simulator; public entries show on each system’s page.', 'yard-systems' ); ?>
 		</p>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="yard_systems_download_log" />
+			<?php wp_nonce_field( 'yard_systems_download_log' ); ?>
+			<?php submit_button( __( 'Download the yard log', 'yard-systems' ), 'secondary', 'submit', false ); ?>
+			<p class="description"><?php esc_html_e( 'Every entry as a file to keep, private ones included, so keep the file private too. Photos are listed by their address; the photos themselves are in a full backup of the site.', 'yard-systems' ); ?></p>
+		</form>
+
+		<?php
+		// phpcs:disable WordPress.Security.NonceVerification -- reading the result of a checked request
+		if ( isset( $_GET['restored'] ) ) {
+			$saved   = absint( $_GET['restored'] );
+			$total   = isset( $_GET['of'] ) ? absint( $_GET['of'] ) : 0;
+			$changed = isset( $_GET['changed'] ) ? absint( $_GET['changed'] ) : 0;
+			$message = $saved
+				/* translators: 1: entries restored, 2: entries in the file, 3: systems whose status or publishing changed */
+				? sprintf( __( 'Restored %1$d of the file’s %2$d entries: the site was missing them or had an older copy. %3$d systems changed as a result.', 'yard-systems' ), $saved, $total, $changed )
+				: __( 'Nothing to restore: the site already has every entry in that file, or a newer copy of it.', 'yard-systems' );
+			printf( '<div class="notice notice-success inline"><p>%s</p></div>', esc_html( $message ) );
+		} elseif ( isset( $_GET['restore'] ) ) {
+			$problems = array(
+				'none' => __( 'No file arrived. Choose the file and try again.', 'yard-systems' ),
+				'big'  => __( 'That file is too big to be a yard log.', 'yard-systems' ),
+				'bad'  => __( 'That isn’t a yard log file. Use one saved with Download the yard log.', 'yard-systems' ),
+			);
+			$code = sanitize_key( wp_unslash( $_GET['restore'] ) );
+			printf( '<div class="notice notice-error inline"><p>%s</p></div>', esc_html( $problems[ $code ] ?? $problems['bad'] ) );
+		}
+		// phpcs:enable
+		?>
+		<form method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="yard_systems_restore_log" />
+			<?php wp_nonce_field( 'yard_systems_restore_log' ); ?>
+			<p>
+				<input type="file" name="yard_log" accept=".json,application/json" required />
+				<?php submit_button( __( 'Restore from the file', 'yard-systems' ), 'secondary', 'submit', false ); ?>
+			</p>
+			<p class="description"><?php esc_html_e( 'Puts back any entry the site is missing, or has an older copy of. An entry the site has changed since the file was saved is left alone, so this is safe to run on a site that is already up to date. Photos come back only if they are still in the media library.', 'yard-systems' ); ?></p>
+		</form>
 
 		<h3><?php esc_html_e( 'Which simulator system each one follows', 'yard-systems' ); ?></h3>
 		<table class="widefat striped" style="max-width:52rem">
@@ -143,6 +181,45 @@ add_action( 'admin_post_yard_systems_new_key', function () {
 	check_admin_referer( 'yard_systems_new_key' );
 	yard_systems_sync_key( true );
 	wp_safe_redirect( admin_url( 'options-general.php?page=yard-systems&newkey=1#sync' ) );
+	exit;
+} );
+
+add_action( 'admin_post_yard_systems_download_log', function () {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Not allowed.', 'yard-systems' ) );
+	}
+	check_admin_referer( 'yard_systems_download_log' );
+	nocache_headers();
+	header( 'Content-Type: application/json; charset=utf-8' );
+	header( 'Content-Disposition: attachment; filename="yard-log-' . wp_date( 'Y-m-d' ) . '.json"' );
+	header( 'X-Content-Type-Options: nosniff' );
+	echo wp_json_encode( yard_systems_log_export(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ); // phpcs:ignore WordPress.Security.EscapeOutput -- JSON for a file, not HTML
+	exit;
+} );
+
+add_action( 'admin_post_yard_systems_restore_log', function () {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Not allowed.', 'yard-systems' ) );
+	}
+	check_admin_referer( 'yard_systems_restore_log' );
+	$back = admin_url( 'options-general.php?page=yard-systems' );
+	$file = $_FILES['yard_log'] ?? null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- checked below, read as JSON only
+
+	if ( ! $file || UPLOAD_ERR_OK !== (int) $file['error'] || ! is_uploaded_file( $file['tmp_name'] ) ) {
+		$query = array( 'restore' => 'none' );
+	} elseif ( (int) $file['size'] > 10 * MB_IN_BYTES ) {
+		$query = array( 'restore' => 'big' );
+	} else {
+		$result = yard_systems_log_import( json_decode( (string) file_get_contents( $file['tmp_name'] ), true ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions -- an uploaded file
+		$query  = is_wp_error( $result )
+			? array( 'restore' => 'bad' )
+			: array(
+				'restored' => $result['saved'],
+				'of'       => $result['total'],
+				'changed'  => $result['changed'],
+			);
+	}
+	wp_safe_redirect( add_query_arg( $query, $back ) . '#sync' );
 	exit;
 } );
 
