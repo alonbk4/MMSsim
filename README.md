@@ -66,8 +66,11 @@ Charts are hand-rolled SVG — no charting dependency.
 
 ### Deploying it
 
-`main` is the live site. `.github/workflows/pages.yml` builds and publishes
-`dist/` on every push to `main`, and nothing else deploys. Work happens on
+`main` is the live site. `.github/workflows/cloudflare.yml` builds and
+publishes `dist/` to Cloudflare Pages on every push to `main`, behind a
+Cloudflare Access sign-in that only invited people pass, and
+`.github/workflows/pages.yml` does the same for GitHub Pages until the move to
+Cloudflare is finished. Nothing else deploys. Work happens on
 other branches, where `.github/workflows/ci.yml` runs the same tests and build
 without publishing; a change goes live when it is merged into `main`, so a
 broken build stops at the branch instead of reaching the phone in your pocket.

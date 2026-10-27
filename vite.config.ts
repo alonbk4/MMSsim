@@ -10,6 +10,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // The site sits behind a sign-in gate, which turns away any request
+      // without its cookie. Browsers fetch the manifest without cookies
+      // unless told otherwise, and without the manifest the app can't be
+      // installed to a home screen.
+      useCredentials: true,
       includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
         name: 'MMSsim — Yard Systems Simulator',
@@ -65,6 +70,14 @@ export default defineConfig({
               cacheName: 'mmssim-pages',
               networkTimeoutSeconds: 3,
               expiration: { maxEntries: 8 },
+              /*
+               * Only a real page is kept. When the sign-in has expired, the
+               * gate answers with a redirect to its sign-in page; Workbox
+               * would otherwise keep that redirect in place of the page, and
+               * the next time the app was opened offline there would be
+               * nothing to open.
+               */
+              cacheableResponse: { statuses: [200] },
             },
           },
         ],
