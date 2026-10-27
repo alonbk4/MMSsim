@@ -67,6 +67,12 @@ Website, with the address and the key from *Settings → Yard site*.
 The key can set badges, add to the log and send its photos, and nothing
 else; *Make a new key* retires the old one.
 
+The site's copy of the log is the record: a new device starts empty and
+gets it on its first sync. *Settings → Yard site → Download the yard log*
+saves every entry as a JSON file to keep, private and deleted ones included,
+in the shape `/sync` returns. Photos are in it only as addresses, so a full
+backup from the host is still the complete copy. Keep the file private.
+
 ### What the simulator has to send
 
 The simulator lives in `src/` and changes separately, so this is the

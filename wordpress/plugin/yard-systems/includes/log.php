@@ -356,3 +356,20 @@ function yard_systems_log_cover( $post_id ) {
 	}
 	return 0;
 }
+
+/**
+ * The whole log as a file to keep: every entry, private and deleted ones
+ * included, in the shape the simulator reads, with photos as their
+ * addresses. The photos themselves are in the media library, and in a full
+ * backup of the site.
+ */
+function yard_systems_log_export() {
+	return array(
+		'format'   => 'yard-systems-log',
+		'version'  => 1,
+		'site'     => get_bloginfo( 'name' ),
+		'url'      => home_url( '/' ),
+		'exported' => gmdate( 'c' ),
+		'entries'  => yard_systems_log_for_devices(),
+	);
+}

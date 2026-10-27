@@ -114,6 +114,12 @@ function yard_systems_settings_page() {
 			?>
 			<?php esc_html_e( 'It is written in the simulator; public entries show on each system’s page.', 'yard-systems' ); ?>
 		</p>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="yard_systems_download_log" />
+			<?php wp_nonce_field( 'yard_systems_download_log' ); ?>
+			<?php submit_button( __( 'Download the yard log', 'yard-systems' ), 'secondary', 'submit', false ); ?>
+			<p class="description"><?php esc_html_e( 'Every entry as a file to keep, private ones included, so keep the file private too. Photos are listed by their address; the photos themselves are in a full backup of the site.', 'yard-systems' ); ?></p>
+		</form>
 
 		<h3><?php esc_html_e( 'Which simulator system each one follows', 'yard-systems' ); ?></h3>
 		<table class="widefat striped" style="max-width:52rem">
@@ -143,6 +149,19 @@ add_action( 'admin_post_yard_systems_new_key', function () {
 	check_admin_referer( 'yard_systems_new_key' );
 	yard_systems_sync_key( true );
 	wp_safe_redirect( admin_url( 'options-general.php?page=yard-systems&newkey=1#sync' ) );
+	exit;
+} );
+
+add_action( 'admin_post_yard_systems_download_log', function () {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Not allowed.', 'yard-systems' ) );
+	}
+	check_admin_referer( 'yard_systems_download_log' );
+	nocache_headers();
+	header( 'Content-Type: application/json; charset=utf-8' );
+	header( 'Content-Disposition: attachment; filename="yard-log-' . wp_date( 'Y-m-d' ) . '.json"' );
+	header( 'X-Content-Type-Options: nosniff' );
+	echo wp_json_encode( yard_systems_log_export(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ); // phpcs:ignore WordPress.Security.EscapeOutput -- JSON for a file, not HTML
 	exit;
 } );
 
