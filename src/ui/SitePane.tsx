@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  applyLatitude, applySlope, buildDrivers, CLIMATE_PRESETS, getPreset,
+  applyLatitude, applySlope, buildDrivers, CLIMATE_PRESETS, DEFAULT_SITE, getPreset,
   runoffFraction, siteFromPreset, solarLatitude,
 } from '../engine/climate';
 import {
@@ -77,6 +77,12 @@ export function SitePane() {
                   {site.climateProvenance ? ` — ${site.climateProvenance}` : ''}.
                   {' '}{Math.round(site.annualRainfallMm)} mm of rain a year.
                 </div>
+                {atStartingPlace(site) && (
+                  <div style={{ marginTop: 5 }}>
+                    <strong>This is Ann Arbor, Michigan</strong>, where the simulator was
+                    built. Set your ZIP code or location to run on your own weather.
+                  </div>
+                )}
                 <div className="meta-line" style={{ marginTop: 5 }}>
                   Choosing a climate above replaces it with a generic one.
                 </div>
@@ -195,6 +201,16 @@ export function SitePane() {
       </div>
     </div>
   );
+}
+
+/**
+ * Still on the place the app starts at, Ann Arbor, because nobody has said
+ * where this yard is. Its weather is measured, but measured somewhere else.
+ */
+function atStartingPlace(site: SiteProfile): boolean {
+  return site.locationSource === undefined
+    && site.latitude === DEFAULT_SITE.latitude
+    && site.longitude === DEFAULT_SITE.longitude;
 }
 
 /**

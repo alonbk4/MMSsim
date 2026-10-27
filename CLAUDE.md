@@ -32,7 +32,8 @@ npm run dev       # local dev server
 
 Run the tests and the build before every push. For anything visible, also
 drive the built app in Chromium: Playwright is not a project dependency, but
-the browser is at `/opt/pw-browsers/chromium-*/chrome-linux/chrome`. Install
+the browser is at `/opt/pw-browsers/chromium` (a link to the versioned
+build, whose folder name changes). Install
 `playwright-core` in a scratch folder, and use a fresh profile *and* an old
 saved design.
 
@@ -50,12 +51,13 @@ saved design.
 
 ## Rules the code depends on
 
-- **Evidence tiers.** The catalog (`src/engine/catalog.ts`) never ships a
-  tested tier. Tested tiers come only from the yard log (`yardLog.ts`). Its
-  seed, `SEED_LOG`, is the yard's own record. To correct a seed, raise its
-  `updated`, or devices that already have it never see the change.
-  `YARD_RESULTS` in `defaults.ts` is derived from `SEED_LOG`, never edited
-  by hand.
+- **Evidence tiers, and whose they are.** Neither the catalog
+  (`src/engine/catalog.ts`) nor the starting design ships a tested tier.
+  Tested tiers come only from the device's own yard log (`yardLog.ts`),
+  which starts empty, because anyone may use the app. `ANN_ARBOR_LOG` is
+  Alon's yard's early record: shown to everyone else as evidence from one
+  yard, never merged into anyone's log. His live record is on the website,
+  and his devices get it by syncing. Only his devices hold the website key.
 - **Old saves must keep loading.** A saved design that crashes the app is a
   white page and a lost yard. When `Design` or `SiteProfile` gains a field,
   supply it in `normalizeDesign` and add an old-shape case to

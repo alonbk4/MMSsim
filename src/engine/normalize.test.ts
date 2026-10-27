@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CLIMATE_PRESETS } from './climate';
-import { createDefaultDesign, DESIGN_VERSION, normalizeDesign, YARD_RESULTS } from './defaults';
-import { applyLog, resultsFromLog, SEED_LOG } from './yardLog';
+import { createDefaultDesign, DESIGN_VERSION, normalizeDesign } from './defaults';
+import { ANN_ARBOR_LOG, applyLog } from './yardLog';
 import { simulate } from './simulate';
 import { CATALOG_BY_ID } from './catalog';
 import { evidenceMeta, isEvidenceTier } from './resources';
@@ -140,28 +140,20 @@ describe('evidence values from outside', () => {
   });
 });
 
-describe("the yard's own results", () => {
-  it('ship with the starting design, not in the catalog', () => {
+describe("the Ann Arbor yard's results", () => {
+  it('are no one else’s: neither the starting design nor the catalog carries them', () => {
     const d = createDefaultDesign();
-    expect(d.overrides.aerobin.evidence).toBe('testedSuccess');
-    expect(d.overrides['biochar-tote'].evidence).toBe('testedSuccess');
-    // The catalog entry itself still makes no claim about anyone's yard.
+    expect(Object.values(d.overrides).some((ov) => ov.evidence)).toBe(false);
     expect(CATALOG_BY_ID.aerobin.evidence).toBe('researched');
-    for (const id of Object.keys(YARD_RESULTS)) expect(CATALOG_BY_ID[id]).toBeDefined();
+    // Every system the record speaks about is one the catalog has.
+    for (const e of ANN_ARBOR_LOG) expect(CATALOG_BY_ID[e.system]).toBeDefined();
   });
 
-  it('are read from the yard log, so the two cannot disagree', () => {
-    const fromLog = resultsFromLog(SEED_LOG);
-    expect(Object.keys(YARD_RESULTS).sort()).toEqual(
-      Object.keys(fromLog).filter((id) => fromLog[id]).sort());
-    for (const [id, ov] of Object.entries(YARD_RESULTS)) expect(ov.evidence).toBe(fromLog[id]);
-  });
-
-  it('reach a design saved before they existed, through the log', () => {
+  it('reach a design saved before they existed, through the yard’s own log', () => {
     // Opening a design no longer adds results; the log sets them at runtime.
     const d = normalizeDesign({ ...legacy(), version: 3 });
     expect(d.overrides.aerobin).toBeUndefined();
-    const overrides = applyLog(d.overrides, SEED_LOG);
+    const overrides = applyLog(d.overrides, ANN_ARBOR_LOG);
     expect(overrides.aerobin.evidence).toBe('testedSuccess');
     expect(overrides['biochar-kiln'].evidence).toBe('testedSuccess');
     // Without disturbing what was already there.

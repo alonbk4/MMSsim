@@ -1,10 +1,96 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  formatLogDate, liveEntries, localDate, type LogEntry, type LogResult,
+  ANN_ARBOR_LOG, formatLogDate, liveEntries, localDate, logBySeason,
+  type LogEntry, type LogResult, type Season,
 } from '../engine/yardLog';
 import { keptPhoto, preparePhoto } from '../state/photos';
+import { systemById, useApp } from '../state/store';
 import { useYardLog } from '../state/yardLog';
-import { EvidenceBadge, Field } from './common';
+import { CATEGORY_ICON, EvidenceBadge, Field, Icon } from './common';
+
+const SEASON_ICON: Record<Season, string> = {
+  winter: 'snow', spring: 'food', summer: 'sun', fall: 'leaf',
+};
+
+/** How much of the latest season shows before "Show the whole log". */
+const LATEST_SHOWN = 4;
+
+/**
+ * Every system's log at once, season by season, newest first: what the
+ * yard tried each season and how it went. The latest few entries show, so
+ * the systems below stay in reach; the rest are a tap away. An entry opens
+ * its system, where it is edited.
+ */
+export function YardTimelineCard() {
+  const all = useYardLog((s) => s.entries);
+  const design = useApp((s) => s.design);
+  const inspect = useApp((s) => s.inspect);
+  const southern = design.site.latitude < 0;
+  const seasons = useMemo(() => logBySeason(all, southern), [all, southern]);
+  const [whole, setWhole] = useState(false);
+  const more = seasons.length > 1 || (seasons[0]?.entries.length ?? 0) > LATEST_SHOWN;
+  const shown = whole || !more
+    ? seasons
+    : [{ ...seasons[0], entries: seasons[0].entries.slice(0, LATEST_SHOWN) }];
+
+  return (
+    <div className="card">
+      <header>
+        <h2>The yard, season by season</h2>
+        <span className="sub">from the yard log</span>
+      </header>
+
+      {seasons.length === 0 ? (
+        <p className="card-note">
+          Nothing recorded yet. Open a system you have tried here and record what happened.
+        </p>
+      ) : (
+        <div className="stack">
+          {shown.map((season) => (
+            <section key={season.key} className="stack" aria-label={season.label}>
+              <div className="season-head">
+                <span className="icon"><Icon name={season.season ? SEASON_ICON[season.season] : 'info'} size={16} /></span>
+                <h3>{season.label}</h3>
+                <span className="meta-line">
+                  {season.entries.length} {season.entries.length === 1 ? 'entry' : 'entries'}
+                </span>
+              </div>
+              {season.entries.map((e) => {
+                const def = systemById(design, e.system);
+                return (
+                  <button
+                    key={e.id} className="sys-row" disabled={!def}
+                    onClick={() => def && inspect(def.id)}
+                  >
+                    <span className="icon"><Icon name={def ? CATEGORY_ICON[def.category] : 'info'} size={17} /></span>
+                    <span className="grow">
+                      <span className="row wrap" style={{ gap: 6 }}>
+                        <span className="name grow">{def?.name ?? e.system}</span>
+                        {e.result ? <EvidenceBadge tier={e.result} /> : <span className="meta-line">Note</span>}
+                      </span>
+                      <span className="meta-line">
+                        {formatLogDate(e.date)}{e.private && ' · Private'}
+                      </span>
+                      {e.note && <span className="desc clamp-2">{e.note}</span>}
+                    </span>
+                    {e.photo && <img className="log-thumb" src={e.photo.thumb} alt="" loading="lazy" />}
+                  </button>
+                );
+              })}
+            </section>
+          ))}
+          {more && (
+            <div className="row">
+              <button className="btn small" onClick={() => setWhole((v) => !v)}>
+                {whole ? 'Show less' : 'Show the whole log'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * A system's yard log: what was tried here, when, and how it went. The
@@ -33,10 +119,13 @@ export function YardLogCard({ system }: { system: string }) {
       ) : (
         <div className="stack">
           {entries.length === 0 ? (
-            <p className="card-note">
-              Nothing recorded yet. Once you have tried it here, record what happened,
-              and especially when it didn't work.
-            </p>
+            <>
+              <p className="card-note">
+                Nothing recorded yet. Once you have tried it here, record what happened,
+                and especially when it didn't work.
+              </p>
+              <OtherYard system={system} />
+            </>
           ) : (
             <ol className="log-list">
               {entries.map((e) => (
@@ -63,6 +152,33 @@ export function YardLogCard({ system }: { system: string }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * What the Ann Arbor yard found, for a system this device has no entries
+ * for: evidence from one real yard, set apart from the person's own log and
+ * never their tier.
+ */
+function OtherYard({ system }: { system: string }) {
+  const found = liveEntries(ANN_ARBOR_LOG, system).reverse();
+  if (!found.length) return null;
+  return (
+    <div className="stack" style={{ gap: 8 }}>
+      <span className="meta-line">
+        One yard in Ann Arbor, Michigan, has tried this. What it found is evidence, not your result:
+      </span>
+      <ol className="log-list">
+        {found.map((e) => (
+          <li key={e.id} className="log-entry">
+            <span className="log-date">
+              {CHOICES.find((c) => c.value === e.result)?.label} there · {formatLogDate(e.date)}
+            </span>
+            {e.note && <p className="log-note">{e.note}</p>}
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

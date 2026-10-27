@@ -13,6 +13,9 @@ simulator: drag systems onto a plan of the yard, and see how far they cover
 a household's needs month by month. The difference is that every number
 carries where it came from.
 
+Since 26 October it is meant for other people too, each on their own
+device. Only Alon's devices are connected to the website.
+
 ## Where it stands
 
 - **Catalog:** 73 systems. The 17 most recent come from the yard itself:
@@ -23,12 +26,19 @@ carries where it came from.
   feed.
 - **Evidence:** five tiers, from Unproven through Researched to three tested
   ones (did not work / partly worked / works). Tested tiers come only from
-  the yard log, which syncs through the website, so every device sees one
-  record. Seeded results: Aerobin, biochar kiln and tote, and aquaponics
+  the device's own yard log, which starts empty. Alon's syncs through the
+  website, so every one of his devices sees one record. His early results
+  (`ANN_ARBOR_LOG`): Aerobin, biochar kiln and tote, and aquaponics
   *works*; nettle ferment and banana peel tea *partly worked* (one moulded
-  batch and one good one each). Alon has since logged more from the app:
+  batch and one good one each). Anyone else sees them on a system's yard
+  log card as evidence from one yard, never as their tier. Alon has since
+  logged more from the app:
   felt hanging pockets and Chapin bucket irrigation are published as *works*,
   and the indoor hydroponic tower is on the site as a draft with no result.
+- **History:** every log entry is dated, and a system keeps all of them,
+  newest first, in the app and on its website page. The Catalog tab opens
+  with the whole yard's log season by season (`logBySeason`), so a year
+  reads as one story.
 - **Site:** a ZIP or "Use my location" sets the sun *and* the weather. Weather
   comes from built-in 2011–2025 NASA POWER averages for every US grid cell
   the ZIP table reaches, or from 15 years of measured ERA5 fetched in-app,
@@ -39,10 +49,35 @@ carries where it came from.
 - **App:** an offline-capable PWA. It is built so Capacitor can wrap it for
   iOS and Android later; the steps are in the README.
 
-Tests: 170, all passing. Pull requests merged: #1 website and status sync
+Tests: 176, all passing. Pull requests merged: #1 website and status sync
 (WordPress chat), #2 README note, #3 yard log (WordPress chat), #4 yard
 results read from the log, and the guard on website ids, #5 these notes, #6
-"labor" spelling on the website (WordPress chat).
+"labor" spelling on the website (WordPress chat), #7 notes and network, #8
+WordPress sample content (WordPress chat), #9 the season-by-season log.
+
+## Other people using it
+
+Each person's yard lives on their own device: design, log and photos, in
+the browser's storage. There are no accounts. The website link needs the
+address and key typed into that browser, so only Alon's devices sync.
+
+- A new device starts with an empty log and no tested tiers.
+- A device that never had a log (last opened before 23 October) drops the
+  Ann Arbor tiers the starting design used to give it (`withoutStarterTiers`).
+- A device opened between 23 and 26 October keeps the Ann Arbor record in its
+  log. That was only Alon, as far as anyone knows.
+- A new device of Alon's is empty until he connects it to the website; the
+  first sync brings his whole record.
+- Still Ann Arbor for everyone: the starting site's weather and the saved
+  "Ann Arbor, MI" location, until a ZIP is set. The Site tab says so until a
+  location is set (`atStartingPlace`).
+
+**Logins are deliberately not built.** They would add the same yard on
+several devices and a backup. They would cost a hosted service (Supabase was
+the pick), password resets, a privacy policy for other people's locations
+and photos, and a step that needs a network. Build them when someone
+actually needs their yard on a second device. Keep other people's accounts
+off the WordPress site.
 
 ## Being tested
 
@@ -108,5 +143,9 @@ this environment can reach" in `CLAUDE.md`.
 
 - Finer offline weather in the mountain West, where a 0.5° cell blurs valley
   and ridge. Anchorage's rain comes out about double the city's.
-- Record dates for the yard's results, so the log shows a season-by-season
-  history and not just the latest result.
+- Split the seeded results that tell more than one attempt. Nettle ferment
+  and banana peel tea are each one *partly worked* entry for a batch that
+  moulded and one that worked; as two entries they would read *did not
+  work*, then *works*, and their badges would change. Aquaponics and the
+  Aerobin fold a rough start in the same way. Alon's record, so his call,
+  and it needs the dates of each batch.
