@@ -4,8 +4,10 @@ Two products share this repo, and two Claude chats share the work:
 
 - **The simulator** (`src/`, `scripts/`, `tools/`): a React + Vite PWA that
   simulates a yard's water, food, energy, soil and shelter systems. It is
-  published to GitHub Pages from `main`. The *simulator chat* owns it, along
-  with `pages.yml`, `ci.yml` and `climate-normals.yml`.
+  published from `main` to Cloudflare Pages (`mmssim.pages.dev`), behind a
+  sign-in gate that lets in only the people Alon invites, and, until that
+  move is finished, to GitHub Pages too. The *simulator chat* owns it, along
+  with `cloudflare.yml`, `pages.yml`, `ci.yml` and `climate-normals.yml`.
 - **The yard website** (`wordpress/`): a WordPress theme and plugin,
   deployed to a staging site by `wordpress.yml`. The *WordPress chat* owns it.
 
@@ -42,7 +44,15 @@ saved design.
 - `main` is the live site. Nothing is pushed to it directly: work on your own
   branch, open a pull request, and Alon merges it, or asks you to.
 - `ci.yml` ("Check") runs the tests and the build on every other branch and
-  every pull request. `pages.yml` deploys only from `main`.
+  every pull request. `cloudflare.yml` and `pages.yml` deploy only from
+  `main`.
+- **The gate is Cloudflare Access.** Every request without its cookie,
+  files included, is redirected to `makemisim.cloudflareaccess.com`. Two
+  things in `vite.config.ts` depend on that: the manifest is fetched with
+  credentials, or the app can't be installed, and the page cache keeps only
+  real `200` pages, or an expired sign-in replaces the offline copy with the
+  redirect. Who may enter is the "Invited people" policy in Zero Trust, not
+  anything in the repo.
 - GitHub Pages must stay on **Source: GitHub Actions**. If a "pages build and
   deployment" run appears in the Actions tab, someone has switched it back to
   deploying from a branch. That publishes the raw repo root, a white page,
@@ -73,7 +83,9 @@ saved design.
 
 Checked on 26 October 2026: cloud sessions now reach NASA POWER and
 `*.github.io`, so a deploy can be confirmed by loading the live page as well
-as by its workflow run. Open-Meteo answers too, but the sandbox shares its
+as by its workflow run. `mmssim.pages.dev` answers too, but only with the
+gate's redirect: from here a Cloudflare deploy is confirmed by its workflow
+run and that redirect, not by opening the app. Open-Meteo answers too, but the sandbox shares its
 outgoing address with other users, and the free daily limit is often spent
 already (HTTP 429). Bundled weather data is still built in GitHub Actions, so
 that it is reproducible: the "Build offline weather averages" workflow

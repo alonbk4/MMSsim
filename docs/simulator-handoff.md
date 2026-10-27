@@ -72,12 +72,24 @@ address and key typed into that browser, so only Alon's devices sync.
   "Ann Arbor, MI" location, until a ZIP is set. The Site tab says so until a
   location is set (`atStartingPlace`).
 
-**Logins are deliberately not built.** They would add the same yard on
-several devices and a backup. They would cost a hosted service (Supabase was
-the pick), password resets, a privacy policy for other people's locations
-and photos, and a step that needs a network. Build them when someone
-actually needs their yard on a second device. Keep other people's accounts
-off the WordPress site.
+**Who may open it is decided at the host, not in the app.** On 27 October
+the simulator moved behind Cloudflare Access: Cloudflare Pages project
+`mmssim` (`mmssim.pages.dev`), Zero Trust team `makemisim`, one Access
+application covering `mmssim.pages.dev` and `*.mmssim.pages.dev`, sign-in by
+an emailed one-time code, sessions of 30 days, and a reusable policy,
+"Invited people", that lists the allowed emails. Alon adds or removes people
+there. The move, in order:
+
+1. Gate the empty project, then deploy to it (`cloudflare.yml`, once the
+   `CLOUDFLARE_*` secrets are set).
+2. Make the repo private, and switch GitHub Pages off, so the old public copy
+   goes. `pages.yml` and the "repo is public" rules in `CLAUDE.md` change then.
+
+**Accounts inside the app are deliberately not built.** They would add the
+same yard on several devices and a backup. If that is ever needed, keep it
+on Cloudflare (a Worker with D1 and R2 that reads the Access identity), not
+Supabase: one sign-in, not two. Keep other people's accounts off the
+WordPress site.
 
 ## Being tested
 
